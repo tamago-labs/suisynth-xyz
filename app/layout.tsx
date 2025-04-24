@@ -3,6 +3,7 @@ import { Sora } from "next/font/google";
 import "./globals.css"
 import { Providers } from "./providers";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const SoraFont = Sora({
   weight: ["400", "500", "700"],
@@ -27,7 +28,7 @@ export default function RootLayout({
           <div className={`relative z-20  mx-auto px-4 py-6 min-h-screen flex flex-col`}>
             <Header />
             {children}
-            {/* <Footer /> */}
+            <Footer />
           </div>
         </Providers>
       </body>
