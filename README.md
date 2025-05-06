@@ -29,6 +29,7 @@ Mock USDC Global State | 0xa3a951b5365f5c5f64ac9ee372d8533ea48707d2bf718918c08e1
 Mock USDC Type | 0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC
 ManagerCap | 0x76957c62721cfe583f8afce10e3cf0bdce6e869097d1af6507f713651d14fe5c
 Switchboard Sui/USD Price State | 0x905b96e0c9862ef47d6a30971ab895ffb80ed1b58a107c3433fa69be64d9ac5d 
+Switchboard BTC/USD Price State | 0xc1c608737dae8be35fb00e32bab782a933bf3d8530f7ec2dfafe6ba630a1a349 
 
 ## License
 
