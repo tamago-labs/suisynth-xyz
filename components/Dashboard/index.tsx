@@ -3,18 +3,28 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Bitcoin, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  ConnectButton,
+  useAccountBalance,
+  useWallet,
+  SuiChainId,
+  ErrorCode,
+  formatSUI
+} from "@suiet/wallet-kit"
+import {
+
+  Bitcoin,
+  DollarSign,
+  TrendingUp,
   TrendingDown,
-  Wallet, 
-  BarChart2, 
+  Wallet,
+  BarChart2,
   PieChart,
   CircleDollarSign,
-  ChevronDown, 
-  ChevronUp, 
+  ChevronDown,
+  ChevronUp,
   Clock,
+  LineChart,
   Zap,
   AlertTriangle,
   Bell,
@@ -26,10 +36,11 @@ import {
   ArrowRight,
   Info,
   CheckCircle,
-  XCircle
+  XCircle,
+  TriangleAlert
 } from 'lucide-react';
 
-const DashboardContainer = () => {
+const DashboardContainerOLD = () => {
   // States
   const [showAssets, setShowAssets] = useState(true);
   const [showAIAlerts, setShowAIAlerts] = useState(true);
@@ -39,7 +50,7 @@ const DashboardContainer = () => {
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  
+
   // Mock data
   const userData = {
     totalValue: 12583.47,
@@ -63,7 +74,7 @@ const DashboardContainer = () => {
       change24h: 2.4
     }
   };
-  
+
   // Mock positions data - combining all position types
   const allPositions = [
     {
@@ -123,7 +134,7 @@ const DashboardContainer = () => {
       health: 'Healthy'
     }
   ];
-  
+
   // Mock AI alerts
   const aiAlerts = [
     {
@@ -163,7 +174,7 @@ const DashboardContainer = () => {
       riskLevel: 'Low'
     }
   ];
-  
+
   // Mock portfolio history
   const portfolioHistory = {
     '24h': [12200, 12250, 12400, 12300, 12500, 12350, 12450, 12583.47],
@@ -171,12 +182,12 @@ const DashboardContainer = () => {
     '30d': [10500, 11000, 10800, 11200, 11500, 11300, 12000, 12583.47],
     '90d': [9000, 9500, 10000, 10500, 11000, 11500, 12000, 12583.47]
   };
-  
+
   // Handle opening the alert modal
   const handleAlertClick = (alert) => {
     setSelectedAlert(alert);
     setShowAlertModal(true);
-    
+
     // Mark alert as read
     aiAlerts.forEach(a => {
       if (a.id === alert.id) {
@@ -184,59 +195,47 @@ const DashboardContainer = () => {
       }
     });
   };
-  
+
   // Calculate portfolio performance
   const calculatePerformance = (period) => {
     const history = portfolioHistory[period];
     if (!history || history.length < 2) return { value: 0, percentage: 0, isPositive: true };
-    
+
     const startValue = history[0];
     const endValue = history[history.length - 1];
     const change = endValue - startValue;
     const percentage = (change / startValue) * 100;
-    
+
     return {
       value: change.toFixed(2),
       percentage: percentage.toFixed(2),
       isPositive: change >= 0
     };
   };
-  
+
   const selectedPerformance = calculatePerformance(selectedTimeframe);
-  
-  // Calculate unread alerts count
-  const unreadAlertsCount = aiAlerts.filter(alert => alert.status === 'unread').length;
-  
+
+
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <div className="flex items-center gap-4">
-            <button 
+            <button
               className="relative bg-slate-800 p-2 rounded-lg hover:bg-slate-700 transition-colors"
               onClick={() => setShowSettingsModal(true)}
             >
               <Settings size={20} />
             </button>
-            
-            <button 
-              className="relative bg-slate-800 p-2 rounded-lg hover:bg-slate-700 transition-colors"
-            >
-              <Bell size={20} />
-              {unreadAlertsCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center">
-                  {unreadAlertsCount}
-                </span>
-              )}
-            </button>
+
           </div>
         </div>
-        
+
         {/* Top Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Value */}
-          <motion.div 
+          <motion.div
             className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-5"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -249,7 +248,7 @@ const DashboardContainer = () => {
                   <div className="text-2xl font-bold">
                     ${showBalances ? userData.totalValue.toLocaleString() : '•••••'}
                   </div>
-                  <button 
+                  <button
                     className="text-slate-500 p-1 hover:text-slate-300"
                     onClick={() => setShowBalances(!showBalances)}
                   >
@@ -271,9 +270,9 @@ const DashboardContainer = () => {
               <div className="text-slate-500 text-xs ml-1">24h</div>
             </div>
           </motion.div>
-          
+
           {/* Portfolio Performance */}
-          <motion.div 
+          <motion.div
             className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-5"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -297,19 +296,19 @@ const DashboardContainer = () => {
                 {selectedPerformance.isPositive ? '+' : ''}{selectedPerformance.percentage}%
               </div>
               <div className="flex gap-2 ml-auto text-xs">
-                <button 
+                <button
                   className={`px-2 py-1 rounded-md ${selectedTimeframe === '24h' ? 'bg-blue-500/20 text-blue-400' : 'text-slate-400 hover:text-slate-200'}`}
                   onClick={() => setSelectedTimeframe('24h')}
                 >
                   24h
                 </button>
-                <button 
+                <button
                   className={`px-2 py-1 rounded-md ${selectedTimeframe === '7d' ? 'bg-blue-500/20 text-blue-400' : 'text-slate-400 hover:text-slate-200'}`}
                   onClick={() => setSelectedTimeframe('7d')}
                 >
                   7d
                 </button>
-                <button 
+                <button
                   className={`px-2 py-1 rounded-md ${selectedTimeframe === '30d' ? 'bg-blue-500/20 text-blue-400' : 'text-slate-400 hover:text-slate-200'}`}
                   onClick={() => setSelectedTimeframe('30d')}
                 >
@@ -318,9 +317,9 @@ const DashboardContainer = () => {
               </div>
             </div>
           </motion.div>
-          
+
           {/* Position Health */}
-          <motion.div 
+          <motion.div
             className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-5"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -330,10 +329,9 @@ const DashboardContainer = () => {
               <div>
                 <h3 className="text-slate-400 text-sm">Position Health</h3>
                 <div className="flex items-end gap-2 mt-1">
-                  <div className={`text-2xl font-bold ${
-                    userData.positionHealth === 'Healthy' ? 'text-green-400' : 
+                  <div className={`text-2xl font-bold ${userData.positionHealth === 'Healthy' ? 'text-green-400' :
                     userData.positionHealth === 'Warning' ? 'text-yellow-400' : 'text-red-400'
-                  }`}>
+                    }`}>
                     {userData.positionHealth}
                   </div>
                 </div>
@@ -352,9 +350,9 @@ const DashboardContainer = () => {
               </div>
             </div>
           </motion.div>
-          
+
           {/* AI Monitoring */}
-          <motion.div 
+          <motion.div
             className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-5"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -374,149 +372,27 @@ const DashboardContainer = () => {
               </div>
             </div>
             <div className="flex items-center gap-1 mt-2 text-sm">
-              <div className="text-slate-400">{unreadAlertsCount} unread alerts</div>
+              {/* <div className="text-slate-400">{unreadAlertsCount} unread alerts</div> */}
               <button className="ml-auto text-xs text-blue-400 hover:text-blue-300">
                 View All
               </button>
             </div>
           </motion.div>
         </div>
-        
+
         {/* Main Content Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Column 1 - Portfolio Chart & Assets */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Portfolio Chart */}
-            <motion.div 
-              className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.4 }}
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold">Portfolio Value</h3>
-                <div className="flex gap-2 text-xs">
-                  <button 
-                    className={`px-2 py-1 rounded-md ${selectedTimeframe === '24h' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}
-                    onClick={() => setSelectedTimeframe('24h')}
-                  >
-                    24h
-                  </button>
-                  <button 
-                    className={`px-2 py-1 rounded-md ${selectedTimeframe === '7d' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}
-                    onClick={() => setSelectedTimeframe('7d')}
-                  >
-                    7d
-                  </button>
-                  <button 
-                    className={`px-2 py-1 rounded-md ${selectedTimeframe === '30d' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}
-                    onClick={() => setSelectedTimeframe('30d')}
-                  >
-                    30d
-                  </button>
-                  <button 
-                    className={`px-2 py-1 rounded-md ${selectedTimeframe === '90d' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}
-                    onClick={() => setSelectedTimeframe('90d')}
-                  >
-                    90d
-                  </button>
-                </div>
-              </div>
-              
-              {/* Simple chart visualization */}
-              <div className="h-64 w-full bg-slate-800/50 rounded-lg overflow-hidden">
-                <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="w-full h-full">
-                  {/* Visualization depends on the selected timeframe */}
-                  {selectedTimeframe === '24h' && (
-                    <>
-                      <path 
-                        d="M0,20 L10,19 L20,18 L30,19 L40,18 L50,17 L60,16 L70,15 L80,14 L90,13 L100,12"
-                        stroke="rgba(56, 189, 248, 0.8)"
-                        strokeWidth="1.5"
-                        fill="none"
-                      />
-                      <path 
-                        d="M0,20 L10,19 L20,18 L30,19 L40,18 L50,17 L60,16 L70,15 L80,14 L90,13 L100,12 L100,40 L0,40 Z"
-                        fill="rgba(56, 189, 248, 0.1)"
-                      />
-                    </>
-                  )}
-                  
-                  {selectedTimeframe === '7d' && (
-                    <>
-                      <path 
-                        d="M0,25 L15,23 L30,24 L45,21 L60,20 L75,22 L100,17"
-                        stroke="rgba(56, 189, 248, 0.8)"
-                        strokeWidth="1.5"
-                        fill="none"
-                      />
-                      <path 
-                        d="M0,25 L15,23 L30,24 L45,21 L60,20 L75,22 L100,17 L100,40 L0,40 Z"
-                        fill="rgba(56, 189, 248, 0.1)"
-                      />
-                    </>
-                  )}
-                  
-                  {selectedTimeframe === '30d' && (
-                    <>
-                      <path 
-                        d="M0,30 L20,25 L40,27 L60,22 L80,18 L100,15"
-                        stroke="rgba(56, 189, 248, 0.8)"
-                        strokeWidth="1.5"
-                        fill="none"
-                      />
-                      <path 
-                        d="M0,30 L20,25 L40,27 L60,22 L80,18 L100,15 L100,40 L0,40 Z"
-                        fill="rgba(56, 189, 248, 0.1)"
-                      />
-                    </>
-                  )}
-                  
-                  {selectedTimeframe === '90d' && (
-                    <>
-                      <path 
-                        d="M0,35 L20,32 L40,28 L60,24 L80,20 L100,15"
-                        stroke="rgba(56, 189, 248, 0.8)"
-                        strokeWidth="1.5"
-                        fill="none"
-                      />
-                      <path 
-                        d="M0,35 L20,32 L40,28 L60,24 L80,20 L100,15 L100,40 L0,40 Z"
-                        fill="rgba(56, 189, 248, 0.1)"
-                      />
-                    </>
-                  )}
-                </svg>
-              </div>
-              
-              <div className="flex justify-between mt-4 text-sm">
-                <div>
-                  <div className="text-slate-400">Start</div>
-                  <div className="font-medium">${showBalances ? 
-                    portfolioHistory[selectedTimeframe][0].toLocaleString() : '•••••'}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-slate-400">Change</div>
-                  <div className={`font-medium ${selectedPerformance.isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                    {selectedPerformance.isPositive ? '+' : ''}${showBalances ? selectedPerformance.value : '•••••'} ({selectedPerformance.percentage}%)
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-slate-400">Current</div>
-                  <div className="font-medium">${showBalances ? 
-                    portfolioHistory[selectedTimeframe][portfolioHistory[selectedTimeframe].length - 1].toLocaleString() : '•••••'}</div>
-                </div>
-              </div>
-            </motion.div>
-            
+
             {/* Your Assets */}
-            <motion.div 
+            <motion.div
               className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.5 }}
             >
-              <div 
+              <div
                 className="flex justify-between items-center mb-4 cursor-pointer"
                 onClick={() => setShowAssets(!showAssets)}
               >
@@ -525,7 +401,7 @@ const DashboardContainer = () => {
                   {showAssets ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </button>
               </div>
-              
+
               {showAssets && (
                 <div className="space-y-4">
                   {/* Portfolio Allocation */}
@@ -534,12 +410,12 @@ const DashboardContainer = () => {
                       <h4 className="text-slate-400">Portfolio Allocation</h4>
                       <div className="text-slate-400">${showBalances ? userData.totalValue.toLocaleString() : '•••••'}</div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       {userData.portfolioAllocation.map((item, i) => (
                         <div key={i} className="flex items-center gap-3">
                           <div className="w-full h-4 bg-slate-700 rounded-full overflow-hidden">
-                            <div 
+                            <div
                               className={`h-full ${item.color}`}
                               style={{ width: `${item.percentage}%` }}
                             />
@@ -548,7 +424,7 @@ const DashboardContainer = () => {
                         </div>
                       ))}
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-3 text-sm">
                       {userData.portfolioAllocation.map((item, i) => (
                         <div key={i} className="flex items-center gap-2">
@@ -559,11 +435,11 @@ const DashboardContainer = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* Wallet Balances */}
                   <div className="pt-4 border-t border-slate-700">
                     <h4 className="text-slate-400 text-sm mb-3">Wallet Balances</h4>
-                    
+
                     <div className="space-y-3">
                       <div className="flex justify-between items-center bg-slate-700/50 rounded-lg p-3">
                         <div className="flex items-center gap-2">
@@ -580,7 +456,7 @@ const DashboardContainer = () => {
                           <div className="text-slate-400 text-xs">${showBalances ? userData.walletBalances.USDC.toLocaleString() : '•••••'}</div>
                         </div>
                       </div>
-                      
+
                       <div className="flex justify-between items-center bg-slate-700/50 rounded-lg p-3">
                         <div className="flex items-center gap-2">
                           <div className="w-9 h-9 rounded-full bg-cyan-500/20 flex items-center justify-center">
@@ -596,7 +472,7 @@ const DashboardContainer = () => {
                           <div className="text-slate-400 text-xs">${showBalances ? (userData.walletBalances.SUI * 5.75).toLocaleString() : '•••••'}</div>
                         </div>
                       </div>
-                      
+
                       <div className="flex justify-between items-center bg-slate-700/50 rounded-lg p-3">
                         <div className="flex items-center gap-2">
                           <div className="w-9 h-9 rounded-full bg-orange-500/20 flex items-center justify-center">
@@ -614,11 +490,11 @@ const DashboardContainer = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Market Data */}
                   <div className="pt-4 border-t border-slate-700">
                     <h4 className="text-slate-400 text-sm mb-3">Market Data</h4>
-                    
+
                     <div className="space-y-3">
                       <div className="flex justify-between items-center bg-slate-700/50 rounded-lg p-3">
                         <div className="flex items-center gap-2">
@@ -642,19 +518,19 @@ const DashboardContainer = () => {
                 </div>
               )}
             </motion.div>
-             
-           
+
+
           </div>
-          
+
           {/* Column 2 - Active Positions */}
           <div className="space-y-6">
-            <motion.div 
+            <motion.div
               className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.4 }}
             >
-              <div 
+              <div
                 className="flex justify-between items-center mb-4 cursor-pointer"
                 onClick={() => setShowPositions(!showPositions)}
               >
@@ -669,20 +545,20 @@ const DashboardContainer = () => {
                   </button>
                 </div>
               </div>
-              
+
               {showPositions && (
                 <div className="space-y-6">
                   {allPositions.length > 0 ? (
                     <div>
                       {/* Group positions by type */}
-                      
+
                       {/* Minted Positions */}
                       {allPositions.filter(p => p.type === 'Minted').length > 0 && (
                         <div className="mb-6">
                           <h4 className="text-sm font-medium text-slate-400 mb-3">Minted Positions</h4>
                           <div className="space-y-3">
                             {allPositions.filter(p => p.type === 'Minted').map((position) => (
-                              <div 
+                              <div
                                 key={position.id}
                                 className="bg-slate-700/30 border border-slate-700/50 rounded-lg p-4"
                               >
@@ -696,15 +572,14 @@ const DashboardContainer = () => {
                                       <div className="text-xs text-slate-400">{position.type}</div>
                                     </div>
                                   </div>
-                                  <div className={`px-2 py-1 rounded text-xs font-medium ${
-                                    position.health === 'Healthy' ? 'bg-green-500/20 text-green-400' : 
-                                    position.health === 'Warning' ? 'bg-yellow-500/20 text-yellow-400' : 
-                                    'bg-red-500/20 text-red-400'
-                                  }`}>
+                                  <div className={`px-2 py-1 rounded text-xs font-medium ${position.health === 'Healthy' ? 'bg-green-500/20 text-green-400' :
+                                    position.health === 'Warning' ? 'bg-yellow-500/20 text-yellow-400' :
+                                      'bg-red-500/20 text-red-400'
+                                    }`}>
                                     {position.health}
                                   </div>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-2 gap-y-2 text-sm">
                                   <div>
                                     <div className="text-slate-400 text-xs">Collateral</div>
@@ -725,7 +600,7 @@ const DashboardContainer = () => {
                                     <div className="text-red-400">${position.liquidationPrice.toLocaleString()}</div>
                                   </div>
                                 </div>
-                                
+
                                 <div className="mt-3 pt-3 border-t border-slate-600/50">
                                   <button className="w-full py-2 text-xs bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-md transition-colors">
                                     Manage Position
@@ -736,14 +611,14 @@ const DashboardContainer = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Supplied Positions */}
                       {allPositions.filter(p => p.type === 'Supplied').length > 0 && (
                         <div className="mb-6">
                           <h4 className="text-sm font-medium text-slate-400 mb-3">Supplied Positions</h4>
                           <div className="space-y-3">
                             {allPositions.filter(p => p.type === 'Supplied').map((position) => (
-                              <div 
+                              <div
                                 key={position.id}
                                 className="bg-slate-700/30 border border-slate-700/50 rounded-lg p-4"
                               >
@@ -761,7 +636,7 @@ const DashboardContainer = () => {
                                     APY: {position.apy}%
                                   </div>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-2 gap-y-2 text-sm">
                                   <div>
                                     <div className="text-slate-400 text-xs">Amount</div>
@@ -780,7 +655,7 @@ const DashboardContainer = () => {
                                     <div className="text-green-400">${position.earnedUSD.toLocaleString()}</div>
                                   </div>
                                 </div>
-                                
+
                                 <div className="mt-3 pt-3 border-t border-slate-600/50">
                                   <button className="w-full py-2 text-xs bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-md transition-colors">
                                     Manage Supply
@@ -791,14 +666,14 @@ const DashboardContainer = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Borrowed Positions */}
                       {allPositions.filter(p => p.type === 'Borrowed').length > 0 && (
                         <div>
                           <h4 className="text-sm font-medium text-slate-400 mb-3">Leveraged Positions</h4>
                           <div className="space-y-3">
                             {allPositions.filter(p => p.type === 'Borrowed').map((position) => (
-                              <div 
+                              <div
                                 key={position.id}
                                 className="bg-slate-700/30 border border-slate-700/50 rounded-lg p-4"
                               >
@@ -816,7 +691,7 @@ const DashboardContainer = () => {
                                     {position.pnl >= 0 ? '+' : ''}{position.pnl} USDC ({position.pnlPercent}%)
                                   </div>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-2 gap-y-2 text-sm">
                                   <div>
                                     <div className="text-slate-400 text-xs">Collateral</div>
@@ -836,11 +711,10 @@ const DashboardContainer = () => {
                                   </div>
                                   <div>
                                     <div className="text-slate-400 text-xs">Health</div>
-                                    <div className={`${
-                                      position.health === 'Healthy' ? 'text-green-400' : 
-                                      position.health === 'Warning' ? 'text-yellow-400' : 
-                                      'text-red-400'
-                                    }`}>
+                                    <div className={`${position.health === 'Healthy' ? 'text-green-400' :
+                                      position.health === 'Warning' ? 'text-yellow-400' :
+                                        'text-red-400'
+                                      }`}>
                                       {position.health}
                                     </div>
                                   </div>
@@ -849,7 +723,7 @@ const DashboardContainer = () => {
                                     <div className="text-red-400">${position.liquidationPrice.toLocaleString()}</div>
                                   </div>
                                 </div>
-                                
+
                                 <div className="mt-3 pt-3 border-t border-slate-600/50">
                                   <button className="w-full py-2 text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded-md transition-colors">
                                     Manage Position
@@ -863,7 +737,7 @@ const DashboardContainer = () => {
                     </div>
                   ) : (
                     <div className="text-center py-8 text-slate-400">
-                      <XCircle size={32} className="mx-auto mb-2" />
+                      <TriangleAlert size={32} className="mx-auto mb-2" />
                       <p>No active positions found</p>
                       <div className="flex gap-3 justify-center mt-4">
                         <button className="px-3 py-2 text-xs bg-blue-500/20 text-blue-400 rounded-md hover:bg-blue-500/30 transition-colors">
@@ -881,11 +755,11 @@ const DashboardContainer = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Alert Detail Modal */}
       {showAlertModal && selectedAlert && (
         <div className="fixed inset-0 bg-slate-900/80 flex items-center justify-center z-50 backdrop-blur-sm">
-          <motion.div 
+          <motion.div
             className="bg-slate-800 rounded-xl border border-slate-700 p-6 max-w-md w-full mx-4"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -902,20 +776,19 @@ const DashboardContainer = () => {
                 )}
                 <h3 className="text-xl font-bold">{selectedAlert.title}</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setShowAlertModal(false)}
                 className="text-slate-400 hover:text-white"
               >
                 &times;
               </button>
             </div>
-            
+
             <div className="space-y-4">
-              <div className={`rounded-lg p-3 ${
-                selectedAlert.type === 'warning' ? 'bg-yellow-500/10 border border-yellow-500/20' : 
-                selectedAlert.type === 'info' ? 'bg-blue-500/10 border border-blue-500/20' : 
-                'bg-green-500/10 border border-green-500/20'
-              }`}>
+              <div className={`rounded-lg p-3 ${selectedAlert.type === 'warning' ? 'bg-yellow-500/10 border border-yellow-500/20' :
+                selectedAlert.type === 'info' ? 'bg-blue-500/10 border border-blue-500/20' :
+                  'bg-green-500/10 border border-green-500/20'
+                }`}>
                 <p className="text-slate-300">{selectedAlert.message}</p>
                 {selectedAlert.marketMovement && (
                   <div className="mt-2 text-sm flex items-center gap-2">
@@ -926,42 +799,40 @@ const DashboardContainer = () => {
                   </div>
                 )}
               </div>
-              
+
               {selectedAlert.recommendation && (
                 <div>
                   <h4 className="font-medium text-slate-300 mb-2">AI Recommendation</h4>
                   <p className="text-slate-400 text-sm">{selectedAlert.recommendation}</p>
                 </div>
               )}
-              
+
               <div className="flex items-center gap-2 text-xs">
                 <Clock size={14} className="text-slate-500" />
                 <span className="text-slate-500">{selectedAlert.timestamp}</span>
                 {selectedAlert.riskLevel && (
-                  <span className={`ml-auto px-2 py-1 rounded ${
-                    selectedAlert.riskLevel === 'Low' ? 'bg-green-500/20 text-green-400' : 
-                    selectedAlert.riskLevel === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 
-                    'bg-red-500/20 text-red-400'
-                  }`}>
+                  <span className={`ml-auto px-2 py-1 rounded ${selectedAlert.riskLevel === 'Low' ? 'bg-green-500/20 text-green-400' :
+                    selectedAlert.riskLevel === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>
                     {selectedAlert.riskLevel} Risk
                   </span>
                 )}
               </div>
-              
+
               <div className="pt-4 flex gap-3">
-                <button 
+                <button
                   onClick={() => setShowAlertModal(false)}
                   className="w-1/2 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-sm"
                 >
                   Dismiss
                 </button>
                 {selectedAlert.suggestedAction && (
-                  <button 
-                    className={`w-1/2 py-3 font-medium rounded-lg transition-colors text-sm ${
-                      selectedAlert.type === 'warning' ? 'bg-yellow-500 hover:bg-yellow-600' : 
-                      selectedAlert.type === 'info' ? 'bg-blue-500 hover:bg-blue-600' : 
-                      'bg-green-500 hover:bg-green-600'
-                    }`}
+                  <button
+                    className={`w-1/2 py-3 font-medium rounded-lg transition-colors text-sm ${selectedAlert.type === 'warning' ? 'bg-yellow-500 hover:bg-yellow-600' :
+                      selectedAlert.type === 'info' ? 'bg-blue-500 hover:bg-blue-600' :
+                        'bg-green-500 hover:bg-green-600'
+                      }`}
                   >
                     {selectedAlert.suggestedAction}
                     <ArrowRight size={16} className="inline ml-1" />
@@ -972,11 +843,11 @@ const DashboardContainer = () => {
           </motion.div>
         </div>
       )}
-      
+
       {/* Settings Modal */}
       {showSettingsModal && (
         <div className="fixed inset-0 bg-slate-900/80 flex items-center justify-center z-50 backdrop-blur-sm">
-          <motion.div 
+          <motion.div
             className="bg-slate-800 rounded-xl border border-slate-700 p-6 max-w-md w-full mx-4"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -984,18 +855,18 @@ const DashboardContainer = () => {
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">AI Monitoring Settings</h3>
-              <button 
+              <button
                 onClick={() => setShowSettingsModal(false)}
                 className="text-slate-400 hover:text-white"
               >
                 &times;
               </button>
             </div>
-            
+
             <div className="space-y-6">
               <div className="space-y-4">
                 <h4 className="font-medium text-slate-300">Alert Preferences</h4>
-                
+
                 <div className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
                   <div>
                     <div className="font-medium">Liquidation Risk Alerts</div>
@@ -1006,7 +877,7 @@ const DashboardContainer = () => {
                     <div className="w-11 h-6 bg-slate-600 rounded-full peer peer-checked:bg-blue-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                   </label>
                 </div>
-                
+
                 <div className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
                   <div>
                     <div className="font-medium">Price Movement Alerts</div>
@@ -1017,7 +888,7 @@ const DashboardContainer = () => {
                     <div className="w-11 h-6 bg-slate-600 rounded-full peer peer-checked:bg-blue-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                   </label>
                 </div>
-                
+
                 <div className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
                   <div>
                     <div className="font-medium">Profit Opportunity Alerts</div>
@@ -1028,7 +899,7 @@ const DashboardContainer = () => {
                     <div className="w-11 h-6 bg-slate-600 rounded-full peer peer-checked:bg-blue-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                   </label>
                 </div>
-                
+
                 <div className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
                   <div>
                     <div className="font-medium">Email Notifications</div>
@@ -1040,10 +911,10 @@ const DashboardContainer = () => {
                   </label>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 <h4 className="font-medium text-slate-300">Risk Thresholds</h4>
-                
+
                 <div>
                   <label className="block text-sm text-slate-400 mb-2">
                     Liquidation Warning Threshold (%)
@@ -1055,7 +926,7 @@ const DashboardContainer = () => {
                     <option value="105">105% (Close to Liquidation)</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm text-slate-400 mb-2">
                     Price Movement Alert Sensitivity
@@ -1067,9 +938,9 @@ const DashboardContainer = () => {
                   </select>
                 </div>
               </div>
-              
+
               <div className="pt-4">
-                <button 
+                <button
                   onClick={() => setShowSettingsModal(false)}
                   className="w-full py-3 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors font-medium"
                 >
@@ -1083,5 +954,165 @@ const DashboardContainer = () => {
     </div>
   );
 };
+
+const DashboardContainer = () => {
+
+  const wallet = useWallet()
+
+  const { account, connected } = wallet
+  const address = account && account?.address
+  const isTestnet = connected && account && account.chains && account.chains[0] === "sui:testnet" ? true : false
+
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  return (
+    <div className="min-h-screen text-white">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <button
+              className="relative bg-slate-800 p-2 rounded-lg hover:bg-slate-700 transition-colors"
+              onClick={() => setShowSettingsModal(true)}
+            >
+              <Settings size={20} />
+            </button>
+
+          </div>
+        </div>
+
+        {(address && isTestnet) ?
+          <>
+          </>
+          :
+          <motion.div
+            className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
+          >
+
+            <div className="text-center py-8">
+              <TriangleAlert size={40} className="text-slate-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Wallet Not Connected</h3>
+              <p className="text-slate-400 mb-6 text-sm">
+                And ensure you are connected to the Sui Testnet to access this dashboard
+              </p>
+            </div>
+          </motion.div>
+        }
+
+
+      </div>
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-slate-900/80 flex items-center justify-center z-50 backdrop-blur-sm">
+          <motion.div
+            className="bg-slate-800 rounded-xl border border-slate-700 p-6 max-w-md w-full mx-4"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">AI Monitoring Settings</h3>
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <h4 className="font-medium text-slate-300">Alert Preferences</h4>
+
+                <div className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
+                  <div>
+                    <div className="font-medium">Liquidation Risk Alerts</div>
+                    <div className="text-slate-400 text-sm">Get notified when positions approach liquidation</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-slate-600 rounded-full peer peer-checked:bg-blue-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
+                  <div>
+                    <div className="font-medium">Price Movement Alerts</div>
+                    <div className="text-slate-400 text-sm">Notify on significant market movements</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-slate-600 rounded-full peer peer-checked:bg-blue-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
+                  <div>
+                    <div className="font-medium">Profit Opportunity Alerts</div>
+                    <div className="text-slate-400 text-sm">Get suggestions for taking profits</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-slate-600 rounded-full peer peer-checked:bg-blue-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
+                  <div>
+                    <div className="font-medium">Email Notifications</div>
+                    <div className="text-slate-400 text-sm">Receive alerts via email</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-slate-600 rounded-full peer peer-checked:bg-blue-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium text-slate-300">Risk Thresholds</h4>
+
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">
+                    Liquidation Warning Threshold (%)
+                  </label>
+                  <select className="w-full bg-slate-700 rounded-lg p-3 text-white focus:outline-none">
+                    <option value="120">120% (Very Early Warning)</option>
+                    <option value="115">115% (Early Warning)</option>
+                    <option selected value="110">110% (Standard)</option>
+                    <option value="105">105% (Close to Liquidation)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">
+                    Price Movement Alert Sensitivity
+                  </label>
+                  <select className="w-full bg-slate-700 rounded-lg p-3 text-white focus:outline-none">
+                    <option value="high">High (±3% movements)</option>
+                    <option selected value="medium">Medium (±5% movements)</option>
+                    <option value="low">Low (±10% movements)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="w-full py-3 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors font-medium"
+                >
+                  Save Settings
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default DashboardContainer;

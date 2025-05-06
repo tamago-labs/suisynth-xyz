@@ -1,0 +1,10 @@
+[
+    {
+        "name" : "SUI", 
+        "coin_type" : "0x2::sui::SUI"
+    },
+    {
+        "name" : "USDC", 
+        "coin_type" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC"
+    }
+]

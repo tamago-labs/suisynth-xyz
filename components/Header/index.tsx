@@ -3,10 +3,12 @@
 import { Loader } from "react-feather"
 import { Gem } from "lucide-react"
 import Link from "next/link"
+import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation'
 import {
     ConnectButton,
 } from '@suiet/wallet-kit';
+
 
 const Header = () => {
 
@@ -18,7 +20,13 @@ const Header = () => {
                 <Link href="/" >
                     <div className="ml-3 flex flex-col">
                         <span className="text-white text-2xl font-bold">SuiSynth</span>
-                        <div className="h-0.5 w-24 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-400 rounded-full mt-0.5"></div>
+                        <motion.div
+                            className="h-0.5 w-24 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-400 rounded-full mt-0.5"
+                            initial={{ opacity: 0, width: 0 }}
+                            whileInView={{ opacity: 1, width: 96 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                        />
                     </div>
                 </Link>
             </div>
@@ -39,7 +47,7 @@ const Header = () => {
                 Connect Wallet
             </button> */}
             <div className="relative z-30">
-                <ConnectButton style={{borderRadius: "0.5rem"}}>
+                <ConnectButton style={{ borderRadius: "0.5rem" }}>
                     Connect Wallet
                 </ConnectButton>
             </div>

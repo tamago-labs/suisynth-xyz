@@ -22,6 +22,7 @@ import {
   X,
   Shield
 } from 'lucide-react';
+import WalletPanel from "@/components/Wallet"
 
 const MarketsContainer = () => {
   // State for selected collateral type
@@ -255,46 +256,9 @@ const MarketsContainer = () => {
             </motion.div>
             
             {/* Wallet Balances */}
-            <motion.div 
-              className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-            >
-              <h3 className="text-lg font-semibold mb-4">Your Wallet</h3>
+            <WalletPanel
               
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center">
-                      <DollarSign className="text-blue-500" size={14} />
-                    </div>
-                    <span>USDC</span>
-                  </div>
-                  <div className="font-mono">{walletBalances.USDC.toLocaleString()}</div>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                      <Wallet className="text-cyan-500" size={14} />
-                    </div>
-                    <span>SUI</span>
-                  </div>
-                  <div className="font-mono">{walletBalances.SUI.toLocaleString()}</div>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center">
-                      <Bitcoin className="text-orange-500" size={14} />
-                    </div>
-                    <span>suiBTC</span>
-                  </div>
-                  <div className="font-mono">{walletBalances.suiBTC.toLocaleString()}</div>
-                </div>
-              </div>
-            </motion.div>
+            />
           </div>
           
           {/* Right Column - Mint and Supply Actions */}
