@@ -33,6 +33,8 @@ module suisynth::sui_btc {
     use std::ascii::into_bytes; 
     use std::option::{Self};
 
+    use switchboard::aggregator::{Aggregator, CurrentResult}; 
+
     // ======== Constants ========
 
     const ERR_PAUSED: u64 = 1;
@@ -1448,20 +1450,39 @@ module suisynth::sui_btc {
         bag::add(&mut global.collateral_pools, type_name, collateral_pool); 
     }
 
-    // Update BTC price oracle 
-    public entry fun update_btc_price(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap, new_price: u64) { 
+    // Update BTC price oracle manually
+    public entry fun update_btc_price_manual(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap, new_price: u64) { 
         global.btc_price_oracle = new_price;
     }
+ 
+    // Update BTC price with Switchboard Oracle
+    // BTC Price Feed ID : 0xc1c608737dae8be35fb00e32bab782a933bf3d8530f7ec2dfafe6ba630a1a349
+    public entry fun update_btc_price(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap, aggregator: &Aggregator ) {
+        // Get the latest update info for the feed
+        let current_result = aggregator.current_result(); 
+        let result_u128: u128 = current_result.result().value();               // Result as u128
 
-    // TODO: update with Pyth
+        global.btc_price_oracle = ((result_u128 / 10000000000000) as u64)
+    }
 
     // Update collateral asset price 
-    public entry fun update_collateral_price<X>(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap,  new_price: u64) {
+    public entry fun update_collateral_price_manual<X>(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap,  new_price: u64) {
         let pool = get_mut_collateral_pool<X>(global);
         pool.price_oracle = new_price;
     }
 
-    // TODO: Update with Pyth
+    // Update collateral asset price with Switchboard Oracle
+    // SUI Price Feed ID : 0x905b96e0c9862ef47d6a30971ab895ffb80ed1b58a107c3433fa69be64d9ac5d
+    public entry fun update_collateral_price<X>(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap, aggregator: &Aggregator) {
+        let pool = get_mut_collateral_pool<X>(global);
+
+        let current_result = aggregator.current_result();
+
+        // Access various result properties 
+        let result_u128: u128 = current_result.result().value();               // Result as u128
+
+        pool.price_oracle = ((result_u128 / 10000000000000) as u64)
+    }
 
     // Update global protocol parameters
     public entry fun update_global_params(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap, min_c_ratio: u64, liq_threshold: u64, fee_to_stakers: u64, fee_to_treasury: u64) { 

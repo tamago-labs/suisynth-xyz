@@ -274,7 +274,7 @@ fun test_leverage_position_and_cash_out_profits() {
         let mut cap = test_scenario::take_from_address<ManagerCap>(&scenario, ADMIN);
         
         // Update BTC price (20% increase)
-        sui_btc::update_btc_price(&mut global, &mut cap, 72000_0000);
+        sui_btc::update_btc_price_manual(&mut global, &mut cap, 72000_0000);
         
         test_scenario::return_shared(global);
         test_scenario::return_to_address(ADMIN, cap);
@@ -432,7 +432,7 @@ fun test_liquidation() {
         let mut cap = test_scenario::take_from_address<ManagerCap>(&scenario, ADMIN);
         
         // Update SUI price (50% drop)
-        sui_btc::update_collateral_price<SUI>( &mut global, &mut cap, 1_0000);
+        sui_btc::update_collateral_price_manual<SUI>( &mut global, &mut cap, 1_0000);
         
         test_scenario::return_shared(global);
         test_scenario::return_to_address(ADMIN, cap);
