@@ -6,7 +6,9 @@ import { motion } from 'framer-motion';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
-// import Loading from "@/components/Loading";
+import { WalletProvider } from "@suiet/wallet-kit";
+
+import "@suiet/wallet-kit/style.css"; 
 
 export function Providers({ children }: any) {
 
@@ -23,9 +25,7 @@ export function Providers({ children }: any) {
         <div className="relative min-h-screen overflow-hidden bg-slate-900">
             {/* Subtle radial gradient */}
             <div className="absolute inset-0 bg-radial-gradient from-slate-800 to-transparent opacity-50" />
-
-            
-
+ 
             {/* Abstract gradient blobs */}
             <div className="absolute inset-0 overflow-hidden">
                 <motion.div
@@ -98,8 +98,9 @@ export function Providers({ children }: any) {
 
             {/* Bottom highlight gradient */}
             <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-blue-600/5 to-transparent" />
-
-            {children}
+            <WalletProvider>
+                {children}
+            </WalletProvider> 
         </div>
     );
 }

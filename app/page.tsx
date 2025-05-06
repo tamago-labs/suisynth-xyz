@@ -16,7 +16,7 @@ export default function App() {
        <Hero/>
        <KeyFeatures/>
        <HowItWorks/>
-       <CTASection/>
+       {/* <CTASection/> */}
        <div className="h-[80px]"/>
     </main>
   );
