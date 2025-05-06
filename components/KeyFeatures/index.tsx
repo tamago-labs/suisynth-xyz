@@ -6,40 +6,40 @@ const KeyFeaturesSection = () => {
   const features = [
     {
       icon: <Bitcoin className="h-6 w-6" />,
-      title: "Synthetic Asset Exposure",
-      description: "Access asset prices like BTC directly on Sui blockchain. Borrow synthetic assets against your collateral, gain leveraged exposure and cash out profits.",
+      title: "Synthetic Asset Issuance",
+      description: "Access asset prices like BTC on Sui. Borrow synthetic assets, gain leveraged exposure and cash out profits.",
       delay: 0.1
     },
     {
       icon: <TrendingUp className="h-6 w-6" />,
       title: "Leverage Up to 4x",
-      description: "Amplify your market exposure with up to 4x leverage. Open larger positions with less capital and maximize potential returns when your outlook is correct.",
+      description: "Anyone can borrow synthetic BTC to gain leveraged exposure and cash out profits on price movements.",
       delay: 0.2
     },
     {
       icon: <Database className="h-6 w-6" />,
       title: "Multi-Collateral Support",
-      description: "Mint or borrow using various stablecoins as collateral. Diversify your strategy and use your preferred stablecoins to back positions.",
+      description: "Mint or borrow using various crypto assets as collateral, secured with real-time prices from Switchboard Oracles.",
       delay: 0.3
     },
-    {
-      icon: <BarChart4 className="h-6 w-6" />,
-      title: "Pyth Oracle Integration",
-      description: "Reliable price feeds from Pyth Network ensure synthetic assets accurately tracks real asset prices for more secure and transparent trading.",
-      delay: 0.4
-    },
-    {
-        icon: <LogIn className="h-6 w-6" />,
-        title: "Onboard with zkLogin",
-        description: "Use familiar logins to access DeFi instantly with zkLogin. Start trading synthetic assets with trading leverage through a seamless flow.",
-        delay: 0.5
-      },
-    {
-      icon: <Mail className="h-6 w-6" />,
-      title: "AI-Powered Email Alerts",
-      description: "Receive intelligent email notifications to your zkLogin account about liquidation risks and alert you before your health factor gets critical.",
-      delay: 0.6
-    }
+    // {
+    //   icon: <BarChart4 className="h-6 w-6" />,
+    //   title: "Pyth Oracle Integration",
+    //   description: "Reliable price feeds from Pyth Network ensure synthetic assets accurately tracks real asset prices for more secure and transparent trading.",
+    //   delay: 0.4
+    // },
+    // {
+    //     icon: <LogIn className="h-6 w-6" />,
+    //     title: "Onboard with zkLogin",
+    //     description: "Use familiar logins to access DeFi instantly with zkLogin. Start trading synthetic assets with trading leverage through a seamless flow.",
+    //     delay: 0.5
+    //   },
+    // {
+    //   icon: <Mail className="h-6 w-6" />,
+    //   title: "AI-Powered Email Alerts",
+    //   description: "Receive intelligent email notifications to your zkLogin account about liquidation risks and alert you before your health factor gets critical.",
+    //   delay: 0.6
+    // }
   ];
 
   return (
@@ -85,6 +85,16 @@ const KeyFeaturesSection = () => {
             </motion.div>
           ))}
         </div>
+
+        <motion.p
+            className="text-slate-400 max-w-xl mx-auto mt-[60px] text-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            All synthetic assets are secured by Switchboard Oracles, using real-time <a href="https://ondemand.switchboard.xyz/sui/testnet/feed/0x905b96e0c9862ef47d6a30971ab895ffb80ed1b58a107c3433fa69be64d9ac5d" className='underline '>SUI/USD</a> and <a href="https://ondemand.switchboard.xyz/sui/testnet/feed/0xc1c608737dae8be35fb00e32bab782a933bf3d8530f7ec2dfafe6ba630a1a349" className='underline '>BTC/USD</a> price data
+          </motion.p>
 
         {/* CTA button */}
         {/* <motion.div 

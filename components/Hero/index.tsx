@@ -1,22 +1,22 @@
 
-import { motion } from 'framer-motion'; 
-import { ArrowRight,   Gem, ChevronUp, ChevronDown } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Gem, ChevronUp, ChevronDown } from 'lucide-react';
 
-const Hero  = () => {
+const Hero = () => {
 
-    // Sample price data for popups
+  // Sample price data for popups
   const priceData = [
     { symbol: "suiS&P", price: "$4,782.16", change: "+2.4%", isUp: true },
     { symbol: "suiGLD", price: "$2,341.75", change: "-0.8%", isUp: false },
-    { symbol: "suiINV", price: "$0.0693", change: "+4.2%", isUp: true },
+    { symbol: "suiBTC", price: "$0.0693", change: "+4.2%", isUp: true },
     { symbol: "suiUSD", price: "$1.002", change: "+0.1%", isUp: true },
     { symbol: "suiCRUD", price: "$87.33", change: "-1.2%", isUp: false },
     { symbol: "suiBTC", price: "$64,213", change: "+1.8%", isUp: true },
     { symbol: "suiETH", price: "$3,021", change: "-0.5%", isUp: false }
   ];
 
-    return (
-        <div className="relative w-full overflow-hidden  py-20">
+  return (
+    <div className="relative w-full overflow-hidden  py-20">
       {/* Subtle background elements */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Animated market line */}
@@ -38,7 +38,7 @@ const Hero  = () => {
             </linearGradient>
           </defs>
         </svg>
-        
+
         {/* Soft gradient blobs */}
         <motion.div
           className="absolute w-96 h-96 rounded-full bg-blue-600/5 blur-3xl"
@@ -53,7 +53,7 @@ const Hero  = () => {
             ease: "easeInOut"
           }}
         />
-        
+
         <motion.div
           className="absolute w-96 h-96 rounded-full bg-purple-600/5 blur-3xl"
           style={{ bottom: '-30%', left: '-10%' }}
@@ -69,12 +69,12 @@ const Hero  = () => {
           }}
         />
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-4 md:px-10 relative z-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-12">
           {/* Left column - content */}
-          <div className="w-full md:w-1/2 space-y-6">  
-            <motion.h1 
+          <div className="w-full md:w-1/2 space-y-6">
+            <motion.h1
               className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -82,17 +82,17 @@ const Hero  = () => {
             >
               Smarter Synthetic Assets on Sui
             </motion.h1>
-            
-            <motion.p 
+
+            <motion.p
               className="text-slate-400 text-md md:text-xl max-w-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-             Access global markets through decentralized synthetic assets on Sui with leverage up to 4x and AI that delivers personalized alerts when action is needed
+              Access global markets through decentralized synthetic assets on Sui with up to 4x leverage and AI-optimized risk parameters for capital-efficient
             </motion.p>
-            
-            <motion.div 
+
+            <motion.div
               className="flex flex-wrap gap-4 pt-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -102,14 +102,14 @@ const Hero  = () => {
                 Trade Now
                 <ArrowRight size={16} />
               </button>
-              
+
               <button className="px-6 py-3 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-700 transition-all">
                 Learn More
               </button>
             </motion.div>
-            
+
             {/* Featured assets row */}
-            <motion.div 
+            <motion.div
               className="pt-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -118,7 +118,7 @@ const Hero  = () => {
               <div className="text-slate-400 text-sm mb-2">Featured Synthetic Assets</div>
               <div className="grid grid-cols-3 gap-4">
                 {priceData.slice(0, 3).map((asset, i) => (
-                  <motion.div 
+                  <motion.div
                     key={asset.symbol}
                     className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 px-3 py-2"
                     initial={{ opacity: 0, y: 20 }}
@@ -136,12 +136,12 @@ const Hero  = () => {
               </div>
             </motion.div>
           </div>
-          
+
           {/* Right column - visualization with price popups */}
           <div className="w-full md:w-1/2 flex justify-center">
             <div className="relative w-full max-w-md aspect-square">
-               
-              
+
+
               {/* Animated price popups */}
               {priceData.map((asset, i) => (
                 <motion.div
@@ -154,7 +154,7 @@ const Hero  = () => {
                     zIndex: 5
                   }}
                   initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ 
+                  animate={{
                     opacity: [0, 1, 1, 0],
                     scale: [0.5, 1, 1, 0.5],
                     y: [20, 0, 0, -20]
@@ -179,14 +179,14 @@ const Hero  = () => {
                   </div>
                 </motion.div>
               ))}
-              
+
               {/* Connection lines from central hub to price cards */}
               {priceData.map((asset, i) => {
                 const x1 = 50;
                 const y1 = 50;
                 const x2 = 15 + (i % 3) * 30;
                 const y2 = 15 + Math.floor(i / 3) * 30;
-                
+
                 return (
                   <svg key={`line-${i}`} className="absolute top-0 left-0 w-full h-full z-0">
                     <motion.line
@@ -198,7 +198,7 @@ const Hero  = () => {
                       strokeWidth="1"
                       strokeDasharray="5,5"
                       initial={{ opacity: 0 }}
-                      animate={{ 
+                      animate={{
                         opacity: [0, 0.3, 0.3, 0],
                       }}
                       transition={{
@@ -212,22 +212,22 @@ const Hero  = () => {
                   </svg>
                 );
               })}
-              
+
               {/* Subtle grid background */}
               <div className="absolute inset-0 -z-10">
                 {[...Array(5)].map((_, i) => (
-                  <div 
-                    key={`grid-h-${i}`} 
-                    className="absolute w-full h-px bg-slate-800/50" 
-                    style={{ top: `${20 + i * 20}%` }} 
+                  <div
+                    key={`grid-h-${i}`}
+                    className="absolute w-full h-px bg-slate-800/50"
+                    style={{ top: `${20 + i * 20}%` }}
                   />
                 ))}
-                
+
                 {[...Array(5)].map((_, i) => (
-                  <div 
-                    key={`grid-v-${i}`} 
-                    className="absolute h-full w-px bg-slate-800/50" 
-                    style={{ left: `${20 + i * 20}%` }} 
+                  <div
+                    key={`grid-v-${i}`}
+                    className="absolute h-full w-px bg-slate-800/50"
+                    style={{ left: `${20 + i * 20}%` }}
                   />
                 ))}
               </div>
@@ -236,7 +236,7 @@ const Hero  = () => {
         </div>
       </div>
     </div>
-    )
+  )
 }
 
 export default Hero
