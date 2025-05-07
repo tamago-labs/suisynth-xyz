@@ -22,8 +22,7 @@ import {
     Trash,
     X,
     Shield
-} from 'lucide-react';
-import COINS from "../../data/coins.json"
+} from 'lucide-react'; 
 import { Droplet } from 'react-feather';
 import { AccountContext } from '@/hooks/useAccount';
 import HealthFactorBar from '../HeathFactorBar';

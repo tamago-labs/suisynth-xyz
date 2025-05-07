@@ -60,9 +60,8 @@ const Provider = ({ children }: Props) => {
         dispatch({ balances: [] })
     }
 
-    useInterval(() => {
-
-        if (address && isTestnet) {
+    useInterval(() => { 
+        if (address && isTestnet) { 
             updateBalances(address)
         } else {
             clearBalances()

@@ -62,6 +62,81 @@ const useMarket = () => {
         [client]
     );
 
+    const listMintPositions = useCallback(
+        async (address: any) => {
+
+            // fetch USDC table first
+            let dynamicFieldPage = await client.getDynamicFields({
+                parentId: "0x533bdd2ee04758d2039c3c6c0bd73aed09d296b8a7ac0f07ef7f300e692c8682"
+            });
+
+            let output = [];
+
+            for (let position of dynamicFieldPage.data) {
+                const { objectId, name } = position;
+
+                if (name.value === address) {
+                    const result: any = await client.getObject({
+                        id: objectId,
+                        options: {
+                            showType: false,
+                            showOwner: true,
+                            showPreviousTransaction: false,
+                            showDisplay: false,
+                            showContent: true,
+                            showBcs: false,
+                            showStorageRebate: false,
+                        },
+                    });
+                    const fields = result.data.content.fields.value.fields;
+                    output.push({
+                        collateralType: "USDC",
+                        collateralAmount: parseAmount(BigNumber(fields?.collateral_amount), 9),
+                        debtAmount: parseAmount(BigNumber(fields?.debt_amount), 9)
+                    })
+                }
+
+            }
+
+            // SUI
+            // "0xb666d1aef14228b3918ab15d8a235e55315a711bc9814a86b6fde9727e4c6a8a"
+            dynamicFieldPage = await client.getDynamicFields({
+                parentId: "0xb666d1aef14228b3918ab15d8a235e55315a711bc9814a86b6fde9727e4c6a8a"
+            });
+
+            for (let position of dynamicFieldPage.data) {
+                const { objectId, name } = position;
+
+                if (name.value === address) {
+                    const result: any = await client.getObject({
+                        id: objectId,
+                        options: {
+                            showType: false,
+                            showOwner: true,
+                            showPreviousTransaction: false,
+                            showDisplay: false,
+                            showContent: true,
+                            showBcs: false,
+                            showStorageRebate: false,
+                        },
+                    });
+                    const fields = result.data.content.fields.value.fields;
+                    output.push({
+                        collateralType: "SUI",
+                        collateralAmount: parseAmount(BigNumber(fields?.collateral_amount), 9),
+                        debtAmount: parseAmount(BigNumber(fields?.debt_amount), 9)
+                    })
+                }
+
+            }
+
+            return output;
+        },
+        [client]
+    )
+
+
+
     const fetchPools = useCallback(async () => {
 
         const { data } = await client.getObject({
@@ -199,7 +274,8 @@ const useMarket = () => {
         faucet,
         fetchBalances,
         fetchPools,
-        mint
+        mint,
+        listMintPositions
     }
 }
 

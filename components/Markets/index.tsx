@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bitcoin,
@@ -26,14 +26,29 @@ import WalletPanel from "@/components/Wallet"
 import AssetCard from './AssetCard';
 import MintPanel from './Mint';
 import SupplyPanel from './Supply';
+import { useWallet } from '@suiet/wallet-kit';
+import useMarket from '@/hooks/useMarket';
+import { AccountContext } from '@/hooks/useAccount';
 
 const MarketsContainer = () => {
+
+  const { poolData } = useContext(AccountContext)
+
+  const wallet = useWallet()
+  const { account, connected } = wallet
+  const address = account && account?.address
+  const isTestnet = connected && account && account.chains && account.chains[0] === "sui:testnet" ? true : false
+
+  const { listMintPositions } = useMarket()
+
+  const [mintPositions, setMintPositions] = useState<any>([])
+
   // State for selected collateral type
   const [collateralType, setCollateralType] = useState('USDC');
   const [mintAmount, setMintAmount] = useState('');
   const [supplyAmount, setSupplyAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
- 
+
   const [activeTab, setActiveTab] = useState('mint');
   const [showPositions, setShowPositions] = useState(true);
 
@@ -64,28 +79,28 @@ const MarketsContainer = () => {
   };
 
   // Mock positions
-  const mintPositions = [
-    {
-      id: 'mint-1',
-      asset: 'suiBTC',
-      collateralType: 'USDC',
-      collateral: 2000,
-      minted: 0.03,
-      collateralRatio: 157,
-      entryPrice: 40000,
-      currentPrice: 42567.89
-    },
-    {
-      id: 'mint-2',
-      asset: 'suiBTC',
-      collateralType: 'SUI',
-      collateral: 30,
-      minted: 0.004,
-      collateralRatio: 165,
-      entryPrice: 41200,
-      currentPrice: 42567.89
-    }
-  ];
+  // const mintPositions = [
+  //   {
+  //     id: 'mint-1',
+  //     asset: 'suiBTC',
+  //     collateralType: 'USDC',
+  //     collateral: 2000,
+  //     minted: 0.03,
+  //     collateralRatio: 157,
+  //     entryPrice: 40000,
+  //     currentPrice: 42567.89
+  //   },
+  //   {
+  //     id: 'mint-2',
+  //     asset: 'suiBTC',
+  //     collateralType: 'SUI',
+  //     collateral: 30,
+  //     minted: 0.004,
+  //     collateralRatio: 165,
+  //     entryPrice: 41200,
+  //     currentPrice: 42567.89
+  //   }
+  // ];
 
   const supplyPositions = [
     {
@@ -98,47 +113,13 @@ const MarketsContainer = () => {
     }
   ];
 
-  const collateralTypes = [
-    { id: 'USDC', icon: <DollarSign size={16} />, color: 'bg-blue-500' },
-    { id: 'SUI', icon: <Wallet size={16} />, color: 'bg-cyan-500' }
-  ];
+  useEffect(() => {
+    if (address && isTestnet) {
+      listMintPositions(address).then(setMintPositions)
+    }
 
-  // Helper to calculate max amount user can mint based on collateral
-  const calculateMaxMint = (collateralAmount) => {
-    // This would be replaced with actual calculation from your contract
-    const collateralValue = collateralType === 'USDC'
-      ? collateralAmount
-      : collateralAmount * 5.75; // Mock SUI price
+  }, [address, isTestnet])
 
-    return collateralValue / (marketData.suiBTC.minCollateralRatio / 100) / marketData.suiBTC.price;
-  };
-
-  // Calculate how much user can mint with current balance
-  const maxMintAmount = calculateMaxMint(
-    collateralType === 'USDC' ? walletBalances.USDC : walletBalances.SUI
-  ).toFixed(8);
-
-  // Calculate required collateral for entered amount
-  const calculateRequiredCollateral = () => {
-    if (!mintAmount) return 0;
-
-    const usdValue = parseFloat(mintAmount) * marketData.suiBTC.price;
-    const requiredUsdCollateral = usdValue * (marketData.suiBTC.minCollateralRatio / 100);
-
-    return collateralType === 'USDC'
-      ? requiredUsdCollateral
-      : requiredUsdCollateral / 5.75; // Convert to SUI
-  };
-
-  const requiredCollateral = calculateRequiredCollateral();
-
-  // Calculate current health ratio
-  const calculateHealthRatio = () => {
-    if (!mintAmount || mintAmount <= 0) return 0;
-    return (marketData.suiBTC.minCollateralRatio / 100) * 100;
-  };
-
-  const healthRatio = calculateHealthRatio();
 
   // Handle position actions
   const handleAddCollateral = (position) => {
@@ -266,63 +247,74 @@ const MarketsContainer = () => {
 
                       {mintPositions.length > 0 ? (
                         <div className="space-y-3">
-                          {mintPositions.map(position => (
-                            <div
-                              key={position.id}
-                              className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50"
-                            >
-                              <div className="flex justify-between items-center mb-3">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
-                                    <Bitcoin className="text-orange-500" size={16} />
+                          {mintPositions.map((position: any, index: number) => {
+
+                            const collateralValue = (position.collateralAmount * (position.collateralType === "SUI" ? poolData?.prices?.SUI : 1))
+                            const entryPrice = collateralValue / (position.debtAmount / (100 / 150))
+                            const debtValue = position.debtAmount * poolData.prices.BTC
+
+                            const collateralRatio = (collateralValue / debtValue) *100
+
+                            return (
+                              <div
+                                key={index}
+                                className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50"
+                              >
+                                <div className="flex justify-between items-center mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
+                                      <Bitcoin className="text-orange-500" size={16} />
+                                    </div>
+                                    <div>
+                                      <div className="font-medium">suiBTC</div>
+                                      <div className="text-xs text-slate-400">
+                                        Collateral: {position.collateralType}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="bg-blue-500/20 text-blue-400 rounded-lg px-2 py-1 text-xs font-medium">
+                                    C-Ratio: {collateralRatio}%
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                  <div>
+                                    <div className="text-slate-400 text-xs">Collateral Amount</div>
+                                    <div>{position.collateralAmount} {position.collateralType}</div>
                                   </div>
                                   <div>
-                                    <div className="font-medium">{position.asset}</div>
-                                    <div className="text-xs text-slate-400">Minted</div>
+                                    <div className="text-slate-400 text-xs">Minted</div>
+                                    <div>{position.debtAmount} suiBTC</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-400 text-xs">Entry Price</div>
+                                    <div>${entryPrice.toLocaleString()}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-400 text-xs">Current Price</div>
+                                    <div>${poolData?.prices?.BTC.toLocaleString()}</div>
                                   </div>
                                 </div>
-                                <div className="bg-blue-500/20 text-blue-400 rounded-lg px-2 py-1 text-xs font-medium">
-                                  C-Ratio: {position.collateralRatio}%
-                                </div>
-                              </div>
 
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                                <div>
-                                  <div className="text-slate-400 text-xs">Collateral</div>
-                                  <div>{position.collateral} {position.collateralType}</div>
-                                </div>
-                                <div>
-                                  <div className="text-slate-400 text-xs">Minted</div>
-                                  <div>{position.minted} {position.asset}</div>
-                                </div>
-                                <div>
-                                  <div className="text-slate-400 text-xs">Entry Price</div>
-                                  <div>${position.entryPrice.toLocaleString()}</div>
-                                </div>
-                                <div>
-                                  <div className="text-slate-400 text-xs">Current Price</div>
-                                  <div>${position.currentPrice.toLocaleString()}</div>
-                                </div>
-                              </div>
-
-                              <div className="mt-4 pt-4 border-t border-slate-600/50">
-                                <div className="flex gap-2">
-                                  <button
-                                    className="flex-1 py-2 text-xs bg-slate-600 hover:bg-slate-500 rounded-md transition-colors"
-                                    onClick={() => handleAddCollateral(position)}
-                                  >
-                                    Add Collateral
-                                  </button>
-                                  <button
-                                    className="flex-1 py-2 text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-md transition-colors"
-                                    onClick={() => handleBurn(position)}
-                                  >
-                                    Burn & Reclaim
-                                  </button>
+                                <div className="mt-4 pt-4 border-t border-slate-600/50">
+                                  <div className="flex gap-2">
+                                    <button
+                                      className="flex-1 py-2 text-xs bg-slate-600 hover:bg-slate-500 rounded-md transition-colors"
+                                      onClick={() => handleAddCollateral(position)}
+                                    >
+                                      Add Collateral
+                                    </button>
+                                    <button
+                                      className="flex-1 py-2 text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-md transition-colors"
+                                      onClick={() => handleBurn(position)}
+                                    >
+                                      Burn & Reclaim
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       ) : (
                         <div className="text-center py-6 bg-slate-800/50 rounded-lg">

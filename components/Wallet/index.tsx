@@ -27,7 +27,7 @@ import HealthFactorBar from '../HeathFactorBar';
 
 const WalletPanel = () => {
 
-    const { balances } = useContext(AccountContext)
+    const { balances, poolData } = useContext(AccountContext)
 
     const { faucet } = useMarket()
 
@@ -59,7 +59,7 @@ const WalletPanel = () => {
             await faucet(recipient)
             setModal(false)
         } catch (error: any) {
-            console.log(error) 
+            console.log(error)
             setErrorMessage(`${error.message}`)
         }
         setLoading(false)
@@ -88,8 +88,13 @@ const WalletPanel = () => {
                             </div>
                             <span>USDC</span>
                         </div>
-                        <div className="font-mono">
-                        {balances && balances[1] && Number(balances[1] || 0).toLocaleString()}
+                        <div className="flex flex-col items-end">
+                            <div className="font-mono">
+                                {(balances.length > 0 && balances[1] && Number(balances[1]) || 0).toLocaleString()}
+                            </div>
+                            <div className="text-slate-400 text-xs">
+                                ${(balances.length > 0 && balances[1] && Number(balances[1]) || 0).toLocaleString()}
+                            </div>
                         </div>
                     </div>
 
@@ -100,11 +105,15 @@ const WalletPanel = () => {
                             </div>
                             <span>SUI</span>
                         </div>
-                        <div className="font-mono">
-                            {balances && balances[0] && Number(balances[0] || 0).toLocaleString()}
+                        <div className="flex flex-col items-end">
+                            <div className="font-mono">
+                                {(balances.length > 0 && balances[0] && Number(balances[0]) || 0).toLocaleString()}
+                            </div>
+                            <div className="text-slate-400 text-xs">
+                                ${((balances.length > 0 && balances[0] && (Number(balances[0] * poolData?.prices?.SUI)) || 0)).toLocaleString()}
+                            </div>
                         </div>
                     </div>
-
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center">
@@ -112,8 +121,13 @@ const WalletPanel = () => {
                             </div>
                             <span>suiBTC</span>
                         </div>
-                        <div className="font-mono">
-                        {balances && balances[2] && Number(balances[2] || 0).toLocaleString()}
+                        <div className="flex flex-col items-end">
+                            <div className="font-mono">
+                                {(balances.length > 0 && balances[2] && Number(balances[2]) || 0).toFixed(8)}
+                            </div>
+                            <div className="text-slate-400 text-xs">
+                                ${((balances.length > 0 && balances[2] && (Number(balances[2] * (poolData?.prices?.BTC))) || 0)).toLocaleString()}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -181,7 +195,7 @@ const WalletPanel = () => {
                                     className="w-1/2 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
                                 >
                                     Cancel
-                                </button> 
+                                </button>
                             </div>
 
                             {errorMessage && (
