@@ -23,6 +23,7 @@ import {
 import { useWallet } from '@suiet/wallet-kit';
 import useMarket from '@/hooks/useMarket';
 import { AccountContext } from '@/hooks/useAccount';
+import HealthFactorBar from '../HeathFactorBar';
 
 const WalletPanel = () => {
 
@@ -88,7 +89,7 @@ const WalletPanel = () => {
                             <span>USDC</span>
                         </div>
                         <div className="font-mono">
-                        {balances && balances[1] && Number(balances[1]).toLocaleString()}
+                        {balances && balances[1] && Number(balances[1] || 0).toLocaleString()}
                         </div>
                     </div>
 
@@ -100,7 +101,7 @@ const WalletPanel = () => {
                             <span>SUI</span>
                         </div>
                         <div className="font-mono">
-                            {balances && balances[0] && Number(balances[0]).toLocaleString()}
+                            {balances && balances[0] && Number(balances[0] || 0).toLocaleString()}
                         </div>
                     </div>
 
@@ -111,7 +112,9 @@ const WalletPanel = () => {
                             </div>
                             <span>suiBTC</span>
                         </div>
-                        <div className="font-mono">0</div>
+                        <div className="font-mono">
+                        {balances && balances[2] && Number(balances[2] || 0).toLocaleString()}
+                        </div>
                     </div>
                 </div>
             </motion.div>
@@ -160,7 +163,6 @@ const WalletPanel = () => {
                                     disabled={loading}
                                     onClick={onMint}
                                     className="w-1/2 py-2 bg-blue-500  text-white font-medium rounded-lg transition-colors"
-
                                 >
                                     {loading
                                         ?
@@ -169,7 +171,7 @@ const WalletPanel = () => {
                                         />
                                         :
                                         <>
-                                            Send 20 USDC
+                                            Send 100 USDC
                                         </>
                                     }
 
@@ -179,8 +181,7 @@ const WalletPanel = () => {
                                     className="w-1/2 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
                                 >
                                     Cancel
-                                </button>
-
+                                </button> 
                             </div>
 
                             {errorMessage && (

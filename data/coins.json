@@ -6,5 +6,9 @@
     {
         "name" : "USDC", 
         "coin_type" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC"
+    },
+    {
+        "name" : "suiBTC", 
+        "coin_type" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::SUI_BTC"
     }
 ]

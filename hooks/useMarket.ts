@@ -5,6 +5,7 @@ import { Transaction } from '@mysten/sui/transactions'
 import { SuiClient, getFullnodeUrl, SuiMoveObject } from '@mysten/sui.js/client'
 import BigNumber from "bignumber.js"
 import COINS from "../data/coins.json"
+import COLLATERAL_POOLS from "../data/collateral_pools.json"
 
 const useMarket = () => {
 
@@ -28,7 +29,7 @@ const useMarket = () => {
                     tx.object(
                         "0xa3a951b5365f5c5f64ac9ee372d8533ea48707d2bf718918c08e11e4a5b5cb33"
                     ),
-                    tx.pure.u64(`${BigNumber(20).multipliedBy(10 ** 9)}`),
+                    tx.pure.u64(`${BigNumber(100).multipliedBy(10 ** 9)}`),
                     tx.pure.address(recipient),
                 ],
             });
@@ -61,13 +62,144 @@ const useMarket = () => {
         [client]
     );
 
+    const fetchPools = useCallback(async () => {
+
+        const { data } = await client.getObject({
+            id: "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8",
+            options: {
+                showType: false,
+                showOwner: false,
+                showPreviousTransaction: false,
+                showDisplay: false,
+                showContent: true,
+                showBcs: false,
+                showStorageRebate: false,
+            },
+        });
+
+        const content: any = data?.content;
+
+        if (!content) {
+            return;
+        }
+
+        let prices: any = {}
+
+        prices["BTC"] = parseAmount(BigNumber(content.fields?.btc_price_oracle), 4)
+
+        // console.log("content: ", content.fields)
+
+        for (let pool of COLLATERAL_POOLS) {
+            const { object_id } = pool
+            const poolData: any = await client.getObject({
+                id: object_id,
+                options: {
+                    showType: false,
+                    showOwner: false,
+                    showPreviousTransaction: false,
+                    showDisplay: false,
+                    showContent: true,
+                    showBcs: false,
+                    showStorageRebate: false,
+                },
+            });
+            const poolFields = poolData.data.content.fields.value.fields;
+
+            // console.log("poolFields :", poolFields)
+
+            prices[pool.name] = parseAmount(BigNumber(poolFields.price_oracle), 4)
+        }
+
+        return {
+            prices
+        }
+
+    }, [client])
+
+    const mint = useCallback(async (
+        collateral_amount: number,
+        collateral_asset_type: string,
+        mint_amount: number
+    ) => {
+        if (!wallet) {
+            return;
+        }
+
+        const { account } = wallet
+        const address = account && account?.address
+
+        if (!address) {
+            return;
+        }
+
+        const tx = new Transaction();
+        tx.setGasBudget(10000000);
+
+        // get the coin object
+        const allCoins = await client.getCoins({
+            owner: address,
+            coinType: collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC",
+        });
+
+        const [mainCoin, ...restCoins] = allCoins.data;
+
+        // check if the balance is enough
+        const totalBalance = allCoins.data.reduce(
+            (output, coin) => output + Number(coin.balance),
+            0,
+        );
+
+        if ((totalBalance / 10 ** 9) < collateral_amount) {
+            throw new Error("Insufficient balance");
+        }
+
+        // merge the coins
+        if (restCoins.length > 0) {
+            tx.mergeCoins(
+                tx.object(mainCoin.coinObjectId),
+                restCoins.map((coin) => tx.object(coin.coinObjectId)),
+            );
+        }
+
+        // split the coin
+        const coinObjId = collateral_asset_type === "SUI" ? tx.gas : mainCoin.coinObjectId;
+
+        const [coin] = tx.splitCoins(coinObjId, [`${(BigNumber(collateral_amount).multipliedBy(10 ** 9)).toFixed(0)}`]);
+
+        tx.moveCall({
+            target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::mint`,
+            typeArguments: [
+                collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC"
+            ],
+            arguments: [
+                tx.object(
+                    "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8"
+                ),
+                coin,
+                tx.pure.u64(`${(BigNumber(mint_amount).multipliedBy(10 ** 9)).toFixed(0)}`)
+            ],
+        });
+
+        // tx.transferObjects([coin], address);
+
+        const params: any = {
+            transaction: tx
+        }
+
+        await wallet.signAndExecuteTransaction(params);
+    },
+        [wallet, client]
+    );
+
     const parseAmount = (input: any, decimals: number) => {
         return Number(input) / 10 ** decimals;
     };
 
     return {
         faucet,
-        fetchBalances
+        fetchBalances,
+        fetchPools,
+        mint
     }
 }
 

@@ -6,9 +6,9 @@ const Hero = () => {
 
   // Sample price data for popups
   const priceData = [
+    { symbol: "suiBTC", price: "$94,213", change: "+4.2%", isUp: true },
     { symbol: "suiS&P", price: "$4,782.16", change: "+2.4%", isUp: true },
-    { symbol: "suiGLD", price: "$2,341.75", change: "-0.8%", isUp: false },
-    { symbol: "suiBTC", price: "$0.0693", change: "+4.2%", isUp: true },
+    { symbol: "suiGLD", price: "$2,341.75", change: "-0.8%", isUp: false }, 
     { symbol: "suiUSD", price: "$1.002", change: "+0.1%", isUp: true },
     { symbol: "suiCRUD", price: "$87.33", change: "-1.2%", isUp: false },
     { symbol: "suiBTC", price: "$64,213", change: "+1.8%", isUp: true },

@@ -1462,7 +1462,7 @@ module suisynth::sui_btc {
         let current_result = aggregator.current_result(); 
         let result_u128: u128 = current_result.result().value();               // Result as u128
 
-        global.btc_price_oracle = ((result_u128 / 10000000000000) as u64)
+        global.btc_price_oracle = ((result_u128 / 100000000000000) as u64)
     }
 
     // Update collateral asset price 
@@ -1481,7 +1481,7 @@ module suisynth::sui_btc {
         // Access various result properties 
         let result_u128: u128 = current_result.result().value();               // Result as u128
 
-        pool.price_oracle = ((result_u128 / 10000000000000) as u64)
+        pool.price_oracle = ((result_u128 / 100000000000000) as u64)
     }
 
     // Update global protocol parameters
