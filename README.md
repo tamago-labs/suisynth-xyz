@@ -1,6 +1,6 @@
 # SuiSynth.XYZ
 
-This repository provides a starter template for creating applications using Next.js (App Router) and AWS Amplify, emphasizing easy setup for authentication, API, and database capabilities.
+**SuiSynth** is a decentralized synthetic asset protocol on **Sui** offering up to 4x leverage via a lending-pool model with AI-optimized risk management. Users can mint synthetic assets by providing collateral, or borrow with leverage to gain amplified exposure to real-world assets without the recurring funding rates typical of perpetual exchanges. Real-time price feeds are secured by **Switchboard Oracle**. With SuiSynth, traders gain capital-efficient exposure to global markets while maintaining full control of their positions.
 
 ## Overview
 
