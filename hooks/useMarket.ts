@@ -189,6 +189,7 @@ const useMarket = () => {
             prices,
             lendingPool: {
                 totalSupplied: parseAmount(BigNumber(content.fields.lending_pool.fields.total_suibtc), 9),
+                totalBorrowed: parseAmount(BigNumber(content.fields.lending_pool.fields.total_borrowed), 9),
                 borrowRate: parseAmount(BigNumber(content.fields.lending_pool.fields.borrow_rate), 2),
                 supplyRate: parseAmount(BigNumber(content.fields.lending_pool.fields.supply_rate), 2),
             }
@@ -418,7 +419,7 @@ const useMarket = () => {
         if (!wallet) {
             return;
         }
- 
+
         const { account } = wallet
         const address = account && account?.address
 
@@ -482,6 +483,78 @@ const useMarket = () => {
         [wallet, client]
     );
 
+    const borrow = useCallback(async (
+        collateral_amount: number,
+        collateral_asset_type: string,
+        leverage: number
+    ) => {
+        if (!wallet) {
+            return;
+        }
+
+        const { account } = wallet
+        const address = account && account?.address
+
+        if (!address) {
+            return;
+        }
+
+        const tx = new Transaction();
+        tx.setGasBudget(10000000);
+
+        // get the coin object
+        const allCoins = await client.getCoins({
+            owner: address,
+            coinType: collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC",
+        });
+
+        const [mainCoin, ...restCoins] = allCoins.data;
+
+        // check if the balance is enough
+        const totalBalance = allCoins.data.reduce(
+            (output, coin) => output + Number(coin.balance),
+            0,
+        );
+
+        if ((totalBalance / 10 ** 9) < collateral_amount) {
+            throw new Error("Insufficient balance");
+        }
+
+        // merge the coins
+        if (collateral_asset_type !== "SUI" && restCoins.length > 0) {
+            tx.mergeCoins(
+                tx.object(mainCoin.coinObjectId),
+                restCoins.map((coin) => tx.object(coin.coinObjectId)),
+            );
+        }
+
+        // split the coin
+        const coinObjId = collateral_asset_type === "SUI" ? tx.gas : mainCoin.coinObjectId;
+
+        const [coin] = tx.splitCoins(coinObjId, [`${(BigNumber(collateral_amount).multipliedBy(10 ** 9)).toFixed(0)}`]);
+
+        tx.moveCall({
+            target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::borrow_with_leverage`,
+            typeArguments: [
+                collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC"
+            ],
+            arguments: [
+                tx.object(
+                    "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8"
+                ),
+                coin,
+                tx.pure.u64(`${(BigNumber(leverage).multipliedBy(10 ** 4)).toFixed(0)}`)
+            ],
+        });
+ 
+        const params: any = {
+            transaction: tx
+        }
+
+        await wallet.signAndExecuteTransaction(params);
+
+    }, [wallet, client])
+
     const parseAmount = (input: any, decimals: number) => {
         return Number(input) / 10 ** decimals;
     };
@@ -494,7 +567,8 @@ const useMarket = () => {
         listMintPositions,
         addCollateral,
         burn,
-        supply
+        supply,
+        borrow
     }
 }
 

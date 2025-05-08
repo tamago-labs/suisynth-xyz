@@ -1,24 +1,25 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Coins, BarChart, ArrowRight, RefreshCcw } from 'lucide-react';
+import { Wallet, Coins, BarChart, ArrowRight, RefreshCcw, Download } from 'lucide-react';
 import Link from 'next/link';
 
 const HowItWorksSection = () => {
+
   const steps = [
     {
-      icon: <Coins className="h-8 w-8" />,
+      icon: <Download className="h-8 w-8" />,
       title: "Deposit Collateral",
-      description: "Provide stablecoins as collateral to the protocol, which serves as backing for synthetic BTC",
+      description: "Supply assets to the lending pool as collateral, securing your position and enabling borrowing",
       delay: 0.1
     },
     {
       icon: <RefreshCcw className="h-8 w-8" />,
       title: "Borrow with 4x Leverage",
-      description: "Borrow Synthetic BTC from the lending pool with up to 4x leverage on your position",
+      description: "Borrow synthetic BTC with up to 4x leverage—no funding rates or order book required",
       delay: 0.2
     },
     {
-      icon: <Wallet className="h-8 w-8" />,
+      icon: <Coins className="h-8 w-8" />,
       title: "Cash Out Real Profits",
       description: "Repay your borrowed suiBTC and withdraw your collateral plus any profits in real assets",
       delay: 0.3
@@ -49,7 +50,7 @@ const HowItWorksSection = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
           />
-          <motion.p
+          {/* <motion.p
             className="text-slate-400 max-w-2xl mx-auto mt-6"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -57,7 +58,10 @@ const HowItWorksSection = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             Live on Sui Testnet with suiBTC and more coming soon. Use your assets as collateral to mint or borrow synthetic tokens
-          </motion.p>
+          </motion.p> */}
+          <p className="text-xl text-slate-300  mt-6 max-w-3xl mx-auto">
+            Live on Sui Testnet with suiBTC and more coming soon
+          </p>
         </div>
 
         {/* Steps */}

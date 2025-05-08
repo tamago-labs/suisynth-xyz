@@ -8,6 +8,7 @@ import Hero from "@/components/Hero";
 import KeyFeatures from "@/components/KeyFeatures";
 import HowItWorks from "@/components/HowItWorks";
 import CTASection from "@/components/CTA";
+import Comparison from "@/components/Comparison";
 
 export default function App() {
    
@@ -16,6 +17,7 @@ export default function App() {
        <Hero/>
        <KeyFeatures/>
        <HowItWorks/>
+       <Comparison/>
        {/* <CTASection/> */}
        <div className="h-[80px]"/>
     </main>

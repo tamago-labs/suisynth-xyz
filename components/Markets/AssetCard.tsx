@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useContext } from 'react';
 
-const AssetCard = ({ marketData }: any) => {
+const AssetCard = ({ marketData, utilizationRate }: any) => {
 
     const { poolData } = useContext(AccountContext)
 
@@ -67,7 +67,7 @@ const AssetCard = ({ marketData }: any) => {
 
                 <div className="bg-slate-700/50 rounded-lg p-3">
                     <div className="text-xs text-slate-400 mb-1">Utilization</div>
-                    <div className="font-semibold">0%</div>
+                    <div className="font-semibold">{utilizationRate.toFixed(2)}%</div>
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-3">
@@ -81,7 +81,7 @@ const AssetCard = ({ marketData }: any) => {
                 <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
                     <div
                         className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                        style={{ width: `${marketData.suiBTC.utilizationRate}%` }}
+                        style={{ width: `${utilizationRate}%` }}
                     />
                 </div>
                 <div className="flex justify-between text-xs mt-1">

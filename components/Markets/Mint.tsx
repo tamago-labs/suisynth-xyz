@@ -28,7 +28,7 @@ import { AccountContext } from '@/hooks/useAccount';
 import HealthFactorBar from '../HeathFactorBar';
 import useMarket from '@/hooks/useMarket';
 
-const MintPanel = () => {
+const MintPanel = ({ increaseTick } : any) => {
 
     const { mint } = useMarket()
 
@@ -95,6 +95,7 @@ const MintPanel = () => {
                 collateralType,
                 mintAmount
             )
+            increaseTick()
         } catch (error: any) {
             console.log(error)
             dispatch({
@@ -105,7 +106,7 @@ const MintPanel = () => {
             loading: false
         })
 
-    }, [mintAmount, collateralType, poolData])
+    }, [mintAmount, collateralType, poolData, increaseTick])
 
     return (
         <motion.div
@@ -182,7 +183,7 @@ const MintPanel = () => {
                             )}
                         </div>
                         <div className="flex justify-between text-xs mt-1">
-                            <span className="text-slate-500">Balance: {(balances && balances.length > 0) ? collateralType === 'USDC' ? (balances[1]).toLocaleString() : (balances[0]).toLocaleString() : 0}</span>
+                            <span className="text-slate-500">Balance: {(balances && balances.length > 0) ? collateralType === 'USDC' ? (balances[1]).toLocaleString() : (balances[0]).toLocaleString() : 0} {collateralType}</span>
                         </div>
                     </div>
 

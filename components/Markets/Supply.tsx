@@ -25,7 +25,7 @@ import { AccountContext } from '@/hooks/useAccount';
 import useMarket from '@/hooks/useMarket';
 
 
-const SupplyPanel = () => {
+const SupplyPanel = ({ increaseTick }: any) => {
 
     const { supply } = useMarket()
 
@@ -65,6 +65,7 @@ const SupplyPanel = () => {
             await supply(
                 amount
             )
+            increaseTick()
         } catch (error: any) {
             console.log(error)
             dispatch({
@@ -75,7 +76,7 @@ const SupplyPanel = () => {
             loading: false
         })
 
-    }, [supplyAmount, supply])
+    }, [supplyAmount, supply, increaseTick])
 
     return (
         <motion.div
@@ -177,7 +178,7 @@ const SupplyPanel = () => {
                             {errorMessage}
                         </p>
                     )}
-  
+
                 </div>
             </div>
         </motion.div>

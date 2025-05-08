@@ -86,6 +86,12 @@ const MarketsContainer = () => {
     }
   };
 
+  const increaseTick = useCallback(() => {
+    dispatch({
+      tick: tick + 1
+    })
+  }, [tick])
+
 
   const supplyPositions: any = [
     // {
@@ -225,6 +231,8 @@ const MarketsContainer = () => {
   };
 
   const newCRatio = (selectedPosition && reclaimAmount) ? Math.floor(selectedPosition.collateralRatio * (1 - parseFloat(reclaimAmount) / selectedPosition.collateralAmount)) : 150
+  const utilizationRate = poolData ? ((poolData.lendingPool.totalBorrowed * 100) / poolData.lendingPool.totalSupplied) : 0
+
 
   return (
     <div className="min-h-screen text-white">
@@ -237,6 +245,7 @@ const MarketsContainer = () => {
             {/* Asset Card */}
             <AssetCard
               marketData={marketData}
+              utilizationRate={utilizationRate}
             />
 
             {/* Wallet Balances */}
@@ -272,14 +281,14 @@ const MarketsContainer = () => {
             {/* Mint Panel */}
             {activeTab === 'mint' && (
               <MintPanel
-
+                increaseTick={increaseTick}
               />
             )}
 
             {/* Supply Panel */}
             {activeTab === 'supply' && (
               <SupplyPanel
-
+                increaseTick={increaseTick}
               />
             )}
 

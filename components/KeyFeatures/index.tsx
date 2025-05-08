@@ -12,8 +12,8 @@ const KeyFeaturesSection = () => {
     },
     {
       icon: <TrendingUp className="h-6 w-6" />,
-      title: "Leverage Up to 4x",
-      description: "Anyone can borrow synthetic BTC to gain leveraged exposure and cash out profits on price movements.",
+      title: "No Funding Rates",
+      description: "Unlike perpetual swaps, you won’t pay recurring fees. Borrow directly and hold your position without hidden costs.",
       delay: 0.2
     },
     {
