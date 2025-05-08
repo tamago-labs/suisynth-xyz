@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useContext, useState, useReducer } from 'react';
 import { motion } from 'framer-motion';
 import {
     Bitcoin,
@@ -18,11 +18,65 @@ import {
     AlertCircle,
     Trash,
     X,
-    Shield
+    Shield,
+    RefreshCw
 } from 'lucide-react';
+import { AccountContext } from '@/hooks/useAccount';
+import useMarket from '@/hooks/useMarket';
 
 
 const SupplyPanel = () => {
+
+    const { supply } = useMarket()
+
+    const [values, dispatch] = useReducer(
+        (curVal: any, newVal: any) => ({ ...curVal, ...newVal }),
+        {
+            loading: false,
+            errorMessage: undefined
+        }
+    )
+
+    const { errorMessage, loading } = values
+
+    const [supplyAmount, setSupplyAmount] = useState<any>('');
+
+    const { balances, poolData } = useContext(AccountContext)
+
+    const onSupply = useCallback(async () => {
+
+        dispatch({
+            errorMessage: undefined
+        })
+
+        const amount = parseFloat(supplyAmount)
+
+        if (amount === 0) {
+            dispatch({
+                errorMessage: "Invalid amount"
+            })
+            return
+        }
+
+        dispatch({
+            loading: true
+        })
+        try {
+            await supply(
+                amount
+            )
+        } catch (error: any) {
+            console.log(error)
+            dispatch({
+                errorMessage: `${error.message}`
+            })
+        }
+        dispatch({
+            loading: false
+        })
+
+    }, [supplyAmount, supply])
+
     return (
         <motion.div
             className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6"
@@ -57,65 +111,73 @@ const SupplyPanel = () => {
                                 type="number"
                                 className="w-full bg-slate-700 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 placeholder="0.00000000"
-                            // value={supplyAmount}
-                            // onChange={(e) => setSupplyAmount(e.target.value)}
+                                value={supplyAmount}
+                                onChange={(e) => setSupplyAmount(e.target.value)}
                             />
-                            <button
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 hover:text-purple-300"
-                            // onClick={() => setSupplyAmount(walletBalances.suiBTC.toString())}
-                            >
-                                MAX
-                            </button>
+
                         </div>
                         <div className="flex justify-between text-xs mt-1">
                             <span className="text-slate-500">
-                                {/* Value: ${supplyAmount ? (parseFloat(supplyAmount) * marketData.suiBTC.price).toLocaleString() : '0.00'} */}
+                                Value: ${(poolData && supplyAmount) ? (parseFloat(supplyAmount) * poolData.prices.BTC).toLocaleString() : '0.00'}
                             </span>
                             <span className="text-slate-500">
-                                {/* Balance: {walletBalances.suiBTC.toLocaleString()} suiBTC */}
+                                Balance: {balances.length > 0 ? balances[2].toFixed(8) : 0} suiBTC
                             </span>
                         </div>
                     </div>
 
                     {/* Supply details */}
-                    {/* {supplyAmount && parseFloat(supplyAmount) > 0 && (
+                    {(poolData && supplyAmount && parseFloat(supplyAmount) > 0) && (
                         <div className="bg-slate-700/50 rounded-lg p-4 space-y-3">
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">APY</span>
-                                <span className="text-green-400">{marketData.suiBTC.supplyAPY}%</span>
+                                <span className="text-green-400">
+                                    {/* {marketData.suiBTC.supplyAPY}% */}
+                                </span>
                             </div>
 
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">Estimated Daily Earnings</span>
                                 <span>
-                                    {((parseFloat(supplyAmount) * marketData.suiBTC.supplyAPY / 100) / 365).toFixed(8)} suiBTC
+                                    {/* {((parseFloat(supplyAmount) * marketData.suiBTC.supplyAPY / 100) / 365).toFixed(8)} suiBTC */}
                                 </span>
                             </div>
 
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">Estimated Monthly Earnings</span>
                                 <span>
-                                    {((parseFloat(supplyAmount) * marketData.suiBTC.supplyAPY / 100) / 12).toFixed(8)} suiBTC
+                                    {/* {((parseFloat(supplyAmount) * marketData.suiBTC.supplyAPY / 100) / 12).toFixed(8)} suiBTC */}
                                 </span>
                             </div>
                         </div>
-                    )} */}
+                    )}
 
                     {/* Action button */}
                     <button
+                        onClick={onSupply}
                         className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-lg flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-purple-500/20 transition-all"
-                    // disabled={!supplyAmount || parseFloat(supplyAmount) <= 0 || parseFloat(supplyAmount) > walletBalances.suiBTC}
+                        disabled={loading || !supplyAmount || parseFloat(supplyAmount) <= 0}
                     >
-                        Supply to Lending Pool
-                        <ArrowRight size={18} />
+
+                        {loading
+                            ?
+                            <RefreshCw
+                                className='mx-auto animate-spin'
+                            />
+                            :
+                            <>
+                                Supply to Lending Pool
+                                <ArrowRight size={18} />
+                            </>
+                        }
                     </button>
 
-                    <div className="text-center text-xs text-slate-400">
-                        <div className="flex items-center justify-center gap-1">
-                            <Info size={12} />
-                            <span>You can withdraw your supplied assets at any time</span>
-                        </div>
-                    </div>
+                    {errorMessage && (
+                        <p className="text-sm text-center mt-2 text-white">
+                            {errorMessage}
+                        </p>
+                    )}
+  
                 </div>
             </div>
         </motion.div>

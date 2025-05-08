@@ -186,7 +186,12 @@ const useMarket = () => {
         }
 
         return {
-            prices
+            prices,
+            lendingPool: {
+                totalSupplied: parseAmount(BigNumber(content.fields.lending_pool.fields.total_suibtc), 9),
+                borrowRate: parseAmount(BigNumber(content.fields.lending_pool.fields.borrow_rate), 2),
+                supplyRate: parseAmount(BigNumber(content.fields.lending_pool.fields.supply_rate), 2),
+            }
         }
 
     }, [client])
@@ -304,7 +309,7 @@ const useMarket = () => {
         }
 
         // merge the coins
-        if (collateral_asset_type !== "SUI" && restCoins.length > 0) {
+        if (restCoins.length > 0) {
             tx.mergeCoins(
                 tx.object(mainCoin.coinObjectId),
                 restCoins.map((coin) => tx.object(coin.coinObjectId)),
@@ -327,6 +332,73 @@ const useMarket = () => {
                 ),
                 coin,
                 tx.pure.u64(`${(BigNumber(collateral_amount).multipliedBy(10 ** 9)).toFixed(0)}`)
+            ],
+        });
+
+        const params: any = {
+            transaction: tx
+        }
+
+        await wallet.signAndExecuteTransaction(params);
+    },
+        [wallet, client]
+    );
+
+    const supply = useCallback(async (
+        sui_btc_amount: number
+    ) => {
+        if (!wallet) {
+            return;
+        }
+
+        const { account } = wallet
+        const address = account && account?.address
+
+        if (!address) {
+            return;
+        }
+
+        const tx = new Transaction();
+        tx.setGasBudget(10000000);
+
+        // get the coin object
+        const allCoins = await client.getCoins({
+            owner: address,
+            coinType: "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::SUI_BTC"
+        });
+
+        const [mainCoin, ...restCoins] = allCoins.data;
+
+        // check if the balance is enough
+        const totalBalance = allCoins.data.reduce(
+            (output, coin) => output + Number(coin.balance),
+            0,
+        );
+
+        if ((totalBalance / 10 ** 9) < sui_btc_amount) {
+            throw new Error("Insufficient balance");
+        }
+
+        // merge the coins
+        if (restCoins.length > 0) {
+            tx.mergeCoins(
+                tx.object(mainCoin.coinObjectId),
+                restCoins.map((coin) => tx.object(coin.coinObjectId)),
+            );
+        }
+
+        // split the coin
+        const coinObjId = mainCoin.coinObjectId
+
+        const [coin] = tx.splitCoins(coinObjId, [`${(BigNumber(sui_btc_amount).multipliedBy(10 ** 9)).toFixed(0)}`]);
+
+        tx.moveCall({
+            target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::supply_suibtc`,
+            arguments: [
+                tx.object(
+                    "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8"
+                ),
+                coin
             ],
         });
 
@@ -421,7 +493,8 @@ const useMarket = () => {
         mint,
         listMintPositions,
         addCollateral,
-        burn
+        burn,
+        supply
     }
 }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bitcoin,
@@ -17,8 +17,11 @@ import {
   Wallet
 } from 'lucide-react';
 import WalletPanel from '../Wallet';
+import { AccountContext } from '@/hooks/useAccount';
 
 const TradeContainer = () => {
+
+  const { poolData } = useContext(AccountContext)
 
   // State
   const [collateralType, setCollateralType] = useState('USDC');
@@ -161,9 +164,9 @@ const TradeContainer = () => {
                   <h3 className="text-xl font-bold">suiBTC</h3>
                   <div className="flex items-center text-sm">
                     <span className="text-slate-400 mr-2">Price:</span>
-                    <span className="font-mono">${marketData.suiBTC.price.toLocaleString()}</span>
+                    <span className="font-mono">${poolData?.prices?.BTC.toLocaleString()}</span>
                     <span className={`ml-2 ${marketData.suiBTC.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {marketData.suiBTC.change24h >= 0 ? '+' : ''}{marketData.suiBTC.change24h}%
+                      {marketData.suiBTC.change24h >= 0 ? '+' : ''}{0}%
                     </span>
                   </div>
                 </div>
@@ -176,8 +179,10 @@ const TradeContainer = () => {
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-3">
-                  <div className="text-xs text-slate-400 mb-1">Borrow APY</div>
-                  <div className="font-semibold text-yellow-400">{marketData.suiBTC.borrowAPY}%</div>
+                  <div className="text-xs text-slate-400 mb-1">Borrow APR</div>
+                  <div className="font-semibold text-yellow-400">
+                    {Number(poolData?.lendingPool?.borrowRate || 0).toFixed(2)} %
+                  </div>
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-3">
@@ -204,35 +209,7 @@ const TradeContainer = () => {
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BarChart2 size={16} className="text-slate-400" />
-                    <span className="text-sm font-medium">Price Chart</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="px-2 py-1 text-xs bg-slate-700 rounded-md text-slate-400">1D</button>
-                    <button className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 rounded-md">1W</button>
-                    <button className="px-2 py-1 text-xs bg-slate-700 rounded-md text-slate-400">1M</button>
-                  </div>
-                </div>
-
-                {/* Simple placeholder chart */}
-                <div className="mt-3 w-full h-32 bg-slate-800 rounded-lg overflow-hidden">
-                  <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="w-full h-full">
-                    <path
-                      d="M0,30 L10,28 L20,26 L30,24 L40,22 L50,18 L60,15 L70,13 L80,10 L90,8 L100,5"
-                      stroke="rgba(96, 165, 250, 0.8)"
-                      strokeWidth="1.5"
-                      fill="none"
-                    />
-                    <path
-                      d="M0,30 L10,28 L20,26 L30,24 L40,22 L50,18 L60,15 L70,13 L80,10 L90,8 L100,5 L100,40 L0,40 Z"
-                      fill="rgba(96, 165, 250, 0.1)"
-                    />
-                  </svg>
-                </div>
-              </div>
+               
             </motion.div>
 
             {/* Wallet */}

@@ -27,6 +27,8 @@ const AssetCard = ({ marketData }: any) => {
 
     const { poolData } = useContext(AccountContext)
 
+ 
+
     return (
         <motion.div
             className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6"
@@ -44,7 +46,7 @@ const AssetCard = ({ marketData }: any) => {
                         <span className="text-slate-400 mr-2">Price:</span>
                         <span className="font-mono">${poolData?.prices?.BTC.toLocaleString()}</span>
                         <span className={`ml-2 ${marketData.suiBTC.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {marketData.suiBTC.change24h >= 0 ? '+' : ''}{marketData.suiBTC.change24h}%
+                            {marketData.suiBTC.change24h >= 0 ? '+' : ''}{0}%
                         </span>
                     </div>
                 </div>
@@ -53,12 +55,14 @@ const AssetCard = ({ marketData }: any) => {
             <div className="grid grid-cols-2 gap-4 mt-6">
                 <div className="bg-slate-700/50 rounded-lg p-3">
                     <div className="text-xs text-slate-400 mb-1">Total Supplied</div>
-                    <div className="font-semibold">0 suiBTC</div>
+                    <div className="font-semibold">
+                        {Number(poolData?.lendingPool?.totalSupplied || 0).toLocaleString()} suiBTC</div>
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-3">
                     <div className="text-xs text-slate-400 mb-1">Supply APY</div>
-                    <div className="font-semibold text-green-400">0%</div>
+                    <div className="font-semibold text-green-400">
+                    {Number(poolData?.lendingPool?.supplyRate || 0).toFixed(2)} %</div>
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-3">

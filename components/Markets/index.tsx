@@ -87,15 +87,15 @@ const MarketsContainer = () => {
   };
 
 
-  const supplyPositions = [
-    {
-      id: 'supply-1',
-      asset: 'suiBTC',
-      amount: 0.02,
-      valueUSD: 851.36,
-      apy: 5.8,
-      suppliedAt: '2025-04-28'
-    }
+  const supplyPositions: any = [
+    // {
+    //   id: 'supply-1',
+    //   asset: 'suiBTC',
+    //   amount: 0.02,
+    //   valueUSD: 851.36,
+    //   apy: 5.8,
+    //   suppliedAt: '2025-04-28'
+    // }
   ];
 
   useEffect(() => {
