@@ -68,7 +68,7 @@ const AssetCard = ({ marketData }: any) => {
 
                 <div className="bg-slate-700/50 rounded-lg p-3">
                     <div className="text-xs text-slate-400 mb-1">Min C-Ratio</div>
-                    <div className="font-semibold">150%</div>
+                    <div className="font-semibold">120%</div>
                 </div>
             </div>
 

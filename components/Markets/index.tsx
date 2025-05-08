@@ -1,8 +1,9 @@
 "use client"
 
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useReducer, useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
+  RefreshCw,
   Bitcoin,
   DollarSign,
   Wallet,
@@ -20,7 +21,8 @@ import {
   AlertCircle,
   Trash,
   X,
-  Shield
+  Shield,
+  AlertTriangle
 } from 'lucide-react';
 import WalletPanel from "@/components/Wallet"
 import AssetCard from './AssetCard';
@@ -29,23 +31,34 @@ import SupplyPanel from './Supply';
 import { useWallet } from '@suiet/wallet-kit';
 import useMarket from '@/hooks/useMarket';
 import { AccountContext } from '@/hooks/useAccount';
+import MintPositions from './MintPositions';
 
 const MarketsContainer = () => {
 
-  const { poolData } = useContext(AccountContext)
+
+  const [values, dispatch] = useReducer(
+    (curVal: any, newVal: any) => ({ ...curVal, ...newVal }),
+    {
+      loading: false,
+      errorMessage: undefined,
+      tick: 1
+    }
+  )
+
+  const { loading, errorMessage, tick } = values
+
+  const { poolData, balances } = useContext(AccountContext)
 
   const wallet = useWallet()
   const { account, connected } = wallet
   const address = account && account?.address
   const isTestnet = connected && account && account.chains && account.chains[0] === "sui:testnet" ? true : false
 
-  const { listMintPositions } = useMarket()
+  const { listMintPositions, addCollateral, burn } = useMarket()
 
   const [mintPositions, setMintPositions] = useState<any>([])
 
-  // State for selected collateral type
-  const [collateralType, setCollateralType] = useState('USDC');
-  const [mintAmount, setMintAmount] = useState('');
+  // State for selected collateral type 
   const [supplyAmount, setSupplyAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
 
@@ -55,10 +68,11 @@ const MarketsContainer = () => {
   // Modal states
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showAddCollateralModal, setShowAddCollateralModal] = useState(false);
-  const [additionalCollateral, setAdditionalCollateral] = useState('');
-  const [selectedPosition, setSelectedPosition] = useState(null);
-  const [showBurnModal, setShowBurnModal] = useState(false);
-  const [burnAmount, setBurnAmount] = useState('');
+  const [additionalCollateral, setAdditionalCollateral] = useState<any>('');
+  const [selectedPosition, setSelectedPosition] = useState<any>(null);
+  const [showBurnModal, setShowBurnModal] = useState<boolean>(false);
+  const [burnAmount, setBurnAmount] = useState<any>('');
+  const [reclaimAmount, setReclaimAmount] = useState<any>('');
 
   // Mock data
   const marketData = {
@@ -72,35 +86,6 @@ const MarketsContainer = () => {
     }
   };
 
-  const walletBalances = {
-    SUI: 10.5,
-    USDC: 5000,
-    suiBTC: 0.12
-  };
-
-  // Mock positions
-  // const mintPositions = [
-  //   {
-  //     id: 'mint-1',
-  //     asset: 'suiBTC',
-  //     collateralType: 'USDC',
-  //     collateral: 2000,
-  //     minted: 0.03,
-  //     collateralRatio: 157,
-  //     entryPrice: 40000,
-  //     currentPrice: 42567.89
-  //   },
-  //   {
-  //     id: 'mint-2',
-  //     asset: 'suiBTC',
-  //     collateralType: 'SUI',
-  //     collateral: 30,
-  //     minted: 0.004,
-  //     collateralRatio: 165,
-  //     entryPrice: 41200,
-  //     currentPrice: 42567.89
-  //   }
-  // ];
 
   const supplyPositions = [
     {
@@ -118,30 +103,118 @@ const MarketsContainer = () => {
       listMintPositions(address).then(setMintPositions)
     }
 
-  }, [address, isTestnet])
+  }, [address, isTestnet, tick])
 
 
   // Handle position actions
-  const handleAddCollateral = (position) => {
+  const handleAddCollateral = (position: any) => {
     setSelectedPosition(position);
     setShowAddCollateralModal(true);
   };
 
-  const handleWithdraw = (position) => {
-    setSelectedPosition(position);
-    setShowWithdrawModal(true);
-  };
-
-  const handleBurn = (position) => {
+  const handleBurn = (position: any) => {
     setSelectedPosition(position);
     setShowBurnModal(true);
   };
 
-  const executeAddCollateral = () => {
-    // This would call your contract
-    console.log(`Adding ${additionalCollateral} ${selectedPosition.collateralType} to position ${selectedPosition.id}`);
-    setShowAddCollateralModal(false);
-    setAdditionalCollateral('');
+
+  const executeAddCollateral = useCallback(async () => {
+
+    dispatch({
+      errorMessage: undefined
+    })
+
+    const amount = parseFloat(additionalCollateral)
+
+    if (amount === 0) {
+      dispatch({
+        errorMessage: "Invalid amount"
+      })
+      return
+    }
+
+    dispatch({
+      loading: true
+    })
+    try {
+
+      await addCollateral(amount, selectedPosition.collateralType)
+
+      setShowAddCollateralModal(false);
+      setAdditionalCollateral('');
+
+      dispatch({
+        tick: tick + 1,
+        loading: false
+      })
+
+    } catch (error: any) {
+      console.log(error)
+      dispatch({
+        errorMessage: `${error.message}`,
+        loading: false
+      })
+    }
+
+  }, [addCollateral, selectedPosition, additionalCollateral, poolData, tick])
+
+  const executeBurn = useCallback(async () => {
+
+    dispatch({
+      errorMessage: undefined
+    })
+
+
+    const rAmount = parseFloat(reclaimAmount)
+    const bAmount = parseFloat(burnAmount)
+
+    if (bAmount === 0) {
+      dispatch({
+        errorMessage: "Invalid burn amount"
+      })
+      return
+    }
+
+    dispatch({
+      loading: true
+    })
+
+    try {
+
+      await burn(
+        bAmount,
+        selectedPosition.collateralType,
+        rAmount
+      )
+
+      setShowBurnModal(false);
+      setBurnAmount('');
+
+      dispatch({
+        tick: tick + 1,
+        loading: false
+      })
+
+    } catch (error: any) {
+      console.log(error)
+      dispatch({
+        errorMessage: `${error.message}`,
+        loading: false
+      })
+    }
+
+  }, [
+    selectedPosition,
+    reclaimAmount,
+    burnAmount,
+    tick,
+    poolData,
+    burn
+  ])
+
+  const handleWithdraw = (position: any) => {
+    setSelectedPosition(position);
+    setShowWithdrawModal(true);
   };
 
   const executeWithdraw = () => {
@@ -151,12 +224,7 @@ const MarketsContainer = () => {
     setWithdrawAmount('');
   };
 
-  const executeBurn = () => {
-    // This would call your contract
-    console.log(`Burning ${burnAmount} ${selectedPosition.asset} from mint position ${selectedPosition.id}`);
-    setShowBurnModal(false);
-    setBurnAmount('');
-  };
+  const newCRatio = (selectedPosition && reclaimAmount) ? Math.floor(selectedPosition.collateralRatio * (1 - parseFloat(reclaimAmount) / selectedPosition.collateralAmount)) : 150
 
   return (
     <div className="min-h-screen text-white">
@@ -242,90 +310,12 @@ const MarketsContainer = () => {
                 <div className="mt-4 space-y-6">
                   {/* Mint Positions */}
                   {activeTab === 'mint' && (
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-400 mb-3">Minted Positions</h4>
-
-                      {mintPositions.length > 0 ? (
-                        <div className="space-y-3">
-                          {mintPositions.map((position: any, index: number) => {
-
-                            const collateralValue = (position.collateralAmount * (position.collateralType === "SUI" ? poolData?.prices?.SUI : 1))
-                            const entryPrice = collateralValue / (position.debtAmount / (100 / 150))
-                            const debtValue = position.debtAmount * poolData.prices.BTC
-
-                            const collateralRatio = (collateralValue / debtValue) *100
-
-                            return (
-                              <div
-                                key={index}
-                                className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50"
-                              >
-                                <div className="flex justify-between items-center mb-3">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
-                                      <Bitcoin className="text-orange-500" size={16} />
-                                    </div>
-                                    <div>
-                                      <div className="font-medium">suiBTC</div>
-                                      <div className="text-xs text-slate-400">
-                                        Collateral: {position.collateralType}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="bg-blue-500/20 text-blue-400 rounded-lg px-2 py-1 text-xs font-medium">
-                                    C-Ratio: {collateralRatio}%
-                                  </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                                  <div>
-                                    <div className="text-slate-400 text-xs">Collateral Amount</div>
-                                    <div>{position.collateralAmount} {position.collateralType}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-slate-400 text-xs">Minted</div>
-                                    <div>{position.debtAmount} suiBTC</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-slate-400 text-xs">Entry Price</div>
-                                    <div>${entryPrice.toLocaleString()}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-slate-400 text-xs">Current Price</div>
-                                    <div>${poolData?.prices?.BTC.toLocaleString()}</div>
-                                  </div>
-                                </div>
-
-                                <div className="mt-4 pt-4 border-t border-slate-600/50">
-                                  <div className="flex gap-2">
-                                    <button
-                                      className="flex-1 py-2 text-xs bg-slate-600 hover:bg-slate-500 rounded-md transition-colors"
-                                      onClick={() => handleAddCollateral(position)}
-                                    >
-                                      Add Collateral
-                                    </button>
-                                    <button
-                                      className="flex-1 py-2 text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-md transition-colors"
-                                      onClick={() => handleBurn(position)}
-                                    >
-                                      Burn & Reclaim
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 bg-slate-800/50 rounded-lg">
-                          <Layers size={32} className="text-slate-500 mx-auto mb-2" />
-                          <p className="text-slate-400">No minted positions found</p>
-                          <button className="mt-3 px-4 py-2 bg-blue-500/20 text-blue-400 text-sm rounded-md hover:bg-blue-500/30 transition-colors">
-                            Mint Your First Position
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <MintPositions
+                      mintPositions={mintPositions}
+                      poolData={poolData}
+                      handleAddCollateral={handleAddCollateral}
+                      handleBurn={handleBurn}
+                    />
                   )}
 
                   {/* Supply Positions */}
@@ -428,16 +418,16 @@ const MarketsContainer = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Asset:</span>
-                    <span>{selectedPosition.asset}</span>
+                    <span>suiBTC</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Current Collateral:</span>
-                    <span>{selectedPosition.collateral} {selectedPosition.collateralType}</span>
+                    <span>{selectedPosition.collateralAmount} {selectedPosition.collateralType}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Current Ratio:</span>
                     <span className={selectedPosition.collateralRatio >= 150 ? "text-green-400" : "text-yellow-400"}>
-                      {selectedPosition.collateralRatio}%
+                      {selectedPosition.collateralRatio.toFixed(2)}%
                     </span>
                   </div>
                 </div>
@@ -455,63 +445,65 @@ const MarketsContainer = () => {
                     value={additionalCollateral}
                     onChange={(e) => setAdditionalCollateral(e.target.value)}
                   />
-                  <button
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 hover:text-blue-300"
-                    onClick={() => {
-                      // Set to wallet balance of appropriate type
-                      const balance = selectedPosition.collateralType === 'USDC' ?
-                        walletBalances.USDC : walletBalances.SUI;
-                      setAdditionalCollateral(balance.toString());
-                    }}
-                  >
-                    MAX
-                  </button>
                 </div>
                 <div className="text-xs mt-1 text-slate-500">
                   Balance: {selectedPosition.collateralType === 'USDC' ?
-                    walletBalances.USDC.toLocaleString() :
-                    walletBalances.SUI.toLocaleString()} {selectedPosition.collateralType}
+                    balances.length > 0 ? balances[1].toLocaleString() : 0 :
+                    balances.length > 0 ? balances[0].toLocaleString() : 0} {selectedPosition.collateralType}
                 </div>
               </div>
 
-              {additionalCollateral && parseFloat(additionalCollateral) > 0 && (
-                <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/20">
-                  <h4 className="font-medium text-blue-400 mb-2">New Position Details</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">New Collateral:</span>
-                      <span>
-                        {(selectedPosition.collateral + parseFloat(additionalCollateral)).toFixed(
-                          selectedPosition.collateralType === 'USDC' ? 2 : 4
-                        )} {selectedPosition.collateralType}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">New Collateral Ratio:</span>
-                      <span className="text-green-400">
-                        {/* Simplified calculation - would be more accurate in real implementation */}
-                        {Math.floor(selectedPosition.collateralRatio * (1 + parseFloat(additionalCollateral) / selectedPosition.collateral))}%
-                      </span>
-                    </div>
+
+              <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/20">
+                <h4 className="font-medium text-blue-400 mb-2">New Position Details</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">New Collateral:</span>
+                    <span>
+                      {(additionalCollateral ? selectedPosition.collateralAmount + parseFloat(additionalCollateral) : 0).toFixed(
+                        selectedPosition.collateralType === 'USDC' ? 2 : 4
+                      )} {selectedPosition.collateralType}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">New Collateral Ratio:</span>
+                    <span className="text-green-400">
+                      {/* Simplified calculation - would be more accurate in real implementation */}
+                      {additionalCollateral ? Math.floor(selectedPosition.collateralRatio * (1 + parseFloat(additionalCollateral) / selectedPosition.collateralAmount)) : selectedPosition.collateralRatio.toFixed(2)}%
+                    </span>
                   </div>
                 </div>
-              )}
+              </div>
 
               <div className="pt-4 flex gap-3">
+                <button
+                  onClick={executeAddCollateral}
+                  className="w-1/2 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+                  disabled={!additionalCollateral || parseFloat(additionalCollateral) <= 0}
+                >
+                  {loading
+                    ?
+                    <RefreshCw
+                      className='mx-auto animate-spin'
+                    />
+                    :
+                    <>
+                      Add Collateral
+                    </>
+                  }
+                </button>
                 <button
                   onClick={() => setShowAddCollateralModal(false)}
                   className="w-1/2 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={executeAddCollateral}
-                  className="w-1/2 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
-                  disabled={!additionalCollateral || parseFloat(additionalCollateral) <= 0}
-                >
-                  Add Collateral
-                </button>
               </div>
+              {errorMessage && (
+                <p className="text-sm text-center mt-2 text-white">
+                  {errorMessage}
+                </p>
+              )}
             </div>
           </motion.div>
         </div>
@@ -646,24 +638,30 @@ const MarketsContainer = () => {
               <div className="bg-slate-700/50 rounded-lg p-4">
                 <h4 className="font-medium text-white mb-3">Position Information</h4>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
+                  {/* <div className="flex justify-between">
                     <span className="text-slate-400">Asset:</span>
-                    <span>{selectedPosition.asset}</span>
-                  </div>
+                    <span>suiBTC</span>
+                  </div> */}
                   <div className="flex justify-between">
                     <span className="text-slate-400">Minted Amount:</span>
-                    <span>{selectedPosition.minted} {selectedPosition.asset}</span>
+                    <span>{selectedPosition.debtAmount} suiBTC</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Collateral:</span>
-                    <span>{selectedPosition.collateral} {selectedPosition.collateralType}</span>
+                    <span className="text-slate-400">Total Collateral:</span>
+                    <span>{selectedPosition.collateralAmount} {selectedPosition.collateralType}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Current C-Ratio:</span>
+                    <span className={selectedPosition.collateralRatio >= 150 ? "text-green-400" : "text-yellow-400"}>
+                      {selectedPosition.collateralRatio.toFixed(2)}%
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">
-                  Burn Amount ({selectedPosition.asset})
+                  Burn Amount (suiBTC)
                 </label>
                 <div className="relative">
                   <input
@@ -673,59 +671,151 @@ const MarketsContainer = () => {
                     value={burnAmount}
                     onChange={(e) => setBurnAmount(e.target.value)}
                   />
-                  <button
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-400 hover:text-red-300"
-                    onClick={() => setBurnAmount(selectedPosition.minted.toString())}
-                  >
-                    MAX
-                  </button>
                 </div>
 
                 <div className="flex justify-between mt-1 text-xs text-slate-500">
-                  <button onClick={() => setBurnAmount((selectedPosition.minted * 0.25).toFixed(8))}>25%</button>
-                  <button onClick={() => setBurnAmount((selectedPosition.minted * 0.5).toFixed(8))}>50%</button>
-                  <button onClick={() => setBurnAmount((selectedPosition.minted * 0.75).toFixed(8))}>75%</button>
-                  <button onClick={() => setBurnAmount(selectedPosition.minted.toString())}>100%</button>
+                  {/* <button className='hover:text-white cursor-pointer' onClick={() => setBurnAmount(0)}>0%</button> */}
+                  <button className='hover:text-white cursor-pointer' onClick={() => setBurnAmount((selectedPosition.debtAmount * 0.25).toFixed(8))}>25%</button>
+                  <button className='hover:text-white cursor-pointer' onClick={() => setBurnAmount((selectedPosition.debtAmount * 0.5).toFixed(8))}>50%</button>
+                  <button className='hover:text-white cursor-pointer' onClick={() => setBurnAmount((selectedPosition.debtAmount * 0.75).toFixed(8))}>75%</button>
+                  <button className='hover:text-white cursor-pointer' onClick={() => setBurnAmount(selectedPosition.debtAmount.toString())}>100%</button>
                 </div>
               </div>
 
-              {burnAmount && parseFloat(burnAmount) > 0 && (
+              <>
+                <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/20">
+                  <h4 className="font-medium text-blue-400 mb-2">Collateral to Reclaim</h4>
+
+                  {/* Maximum available collateral to reclaim */}
+                  {/* <div className="text-sm mb-3">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-slate-400">Maximum Available:</span>
+                      <span>
+                        {burnAmount ? (selectedPosition.collateralAmount * parseFloat(burnAmount) / selectedPosition.debtAmount).toFixed(
+                          selectedPosition.collateralType === 'USDC' ? 2 : 4
+                        ) : 0} {selectedPosition.collateralType}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      Based on the proportion of suiBTC being burned
+                    </div>
+                  </div> */}
+
+                  {/* Collateral amount input */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">
+                      Reclaim Amount ({selectedPosition.collateralType})
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        className="w-full bg-slate-700 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="0.00"
+                        value={reclaimAmount || ''}
+                        onChange={(e) => setReclaimAmount(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="flex justify-between mt-1 text-xs text-slate-500">
+                      <button className='hover:text-white cursor-pointer' onClick={() => {
+                        setReclaimAmount(0);
+                      }}>0%</button>
+                      <button className='hover:text-white cursor-pointer' onClick={() => {
+                        const maxReclaim = selectedPosition.collateralAmount * parseFloat(burnAmount) / selectedPosition.debtAmount;
+                        setReclaimAmount((maxReclaim * 0.25).toFixed(selectedPosition.collateralType === 'USDC' ? 2 : 4));
+                      }}>25%</button>
+                      <button className='hover:text-white cursor-pointer' onClick={() => {
+                        const maxReclaim = selectedPosition.collateralAmount * parseFloat(burnAmount) / selectedPosition.debtAmount;
+                        setReclaimAmount((maxReclaim * 0.5).toFixed(selectedPosition.collateralType === 'USDC' ? 2 : 4));
+                      }}>50%</button>
+                      <button className='hover:text-white cursor-pointer' onClick={() => {
+                        const maxReclaim = selectedPosition.collateralAmount * parseFloat(burnAmount) / selectedPosition.debtAmount;
+                        setReclaimAmount((maxReclaim * 0.75).toFixed(selectedPosition.collateralType === 'USDC' ? 2 : 4));
+                      }}>75%</button>
+                      <button className='hover:text-white cursor-pointer' onClick={() => {
+                        const maxReclaim = selectedPosition.collateralAmount * parseFloat(burnAmount) / selectedPosition.debtAmount;
+                        setReclaimAmount(maxReclaim.toFixed(selectedPosition.collateralType === 'USDC' ? 2 : 4));
+                      }}>100%</button>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="bg-red-500/10 rounded-lg p-3 border border-red-500/20">
                   <h4 className="font-medium text-red-400 mb-2">After Burning</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-slate-400">Remaining Minted:</span>
                       <span>
-                        {Math.max(0, selectedPosition.minted - parseFloat(burnAmount)).toFixed(8)} {selectedPosition.asset}
+                        {burnAmount ? Math.max(0, selectedPosition.debtAmount - parseFloat(burnAmount)).toFixed(8) : 0} suiBTC
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Collateral to Reclaim:</span>
+                      <span className="text-slate-400">Remaining Collateral:</span>
                       <span>
-                        {(selectedPosition.collateral * parseFloat(burnAmount) / selectedPosition.minted).toFixed(
+                        {(selectedPosition.collateralAmount - (reclaimAmount || 0)).toFixed(
                           selectedPosition.collateralType === 'USDC' ? 2 : 4
                         )} {selectedPosition.collateralType}
                       </span>
                     </div>
+
+                    {/* Only show new C-Ratio if there will be remaining minted assets */}
+                    {selectedPosition.debtAmount - parseFloat(burnAmount) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">New C-Ratio:</span>
+                        <span className={newCRatio >= 150 ? "text-green-400" : newCRatio >= 130 ? "text-yellow-400" : "text-red-400"}>
+                          {newCRatio}%
+                        </span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Warning for low C-Ratio */}
+                  {newCRatio < 150 && selectedPosition.minted - parseFloat(burnAmount) > 0 && (
+                    <div className="mt-2 flex items-start gap-2 text-xs">
+                      <AlertTriangle size={14} className="text-yellow-500 shrink-0 mt-0.5" />
+                      <span className="text-yellow-400">
+                        Warning: New collateral ratio will be below the recommended 150%. This could increase liquidation risk.
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
+              </>
 
               <div className="pt-4 flex gap-3">
+                <button
+                  onClick={executeBurn}
+                  className="w-1/2 py-2 bg-red-500/80 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
+                // disabled={
+                //   loading || 
+                //   !reclaimAmount ||
+                //   parseFloat(reclaimAmount) <= 0 ||
+                //   parseFloat(reclaimAmount) > (selectedPosition.collateralAmount * parseFloat(burnAmount) / selectedPosition.debtAmount) ||
+                //   (newCRatio < 120 && selectedPosition.debtAmount - parseFloat(burnAmount) > 0)
+                // }
+                >
+                  {loading
+                    ?
+                    <RefreshCw
+                      className='mx-auto animate-spin'
+                    />
+                    :
+                    <>
+                      Burn & Reclaim
+                    </>
+                  }
+                </button>
                 <button
                   onClick={() => setShowBurnModal(false)}
                   className="w-1/2 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={executeBurn}
-                  className="w-1/2 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
-                  disabled={!burnAmount || parseFloat(burnAmount) <= 0 || parseFloat(burnAmount) > selectedPosition.minted}
-                >
-                  Burn & Reclaim
-                </button>
               </div>
+              {errorMessage && (
+                <p className="text-sm text-center mt-2 text-white">
+                  {errorMessage}
+                </p>
+              )}
             </div>
           </motion.div>
         </div>

@@ -22,7 +22,7 @@ import {
     Trash,
     X,
     Shield
-} from 'lucide-react'; 
+} from 'lucide-react';
 import { Droplet } from 'react-feather';
 import { AccountContext } from '@/hooks/useAccount';
 import HealthFactorBar from '../HeathFactorBar';
@@ -79,12 +79,12 @@ const MintPanel = () => {
             return
         }
 
-        const usdValue = parseFloat(mintAmount) * poolData.prices.BTC; 
-        const requiredUsdCollateral = usdValue * (150 / 100); 
+        const usdValue = parseFloat(mintAmount) * poolData.prices.BTC;
+        const requiredUsdCollateral = usdValue * (150 / 100);
         const requiredCollateral = collateralType === 'USDC'
             ? requiredUsdCollateral
             : requiredUsdCollateral / (poolData.prices.SUI); // Convert to SUI
- 
+
         dispatch({
             loading: true
         })
@@ -122,7 +122,7 @@ const MintPanel = () => {
                         <div>
                             <h4 className="font-medium text-blue-400">Synthetic Asset Issuance</h4>
                             <p className="text-slate-300 text-sm mt-1">
-                                Mint synthetic BTC by providing collateral. Your position must maintain a minimum collateralization ratio of 150% to avoid liquidation.
+                                You will mint synthetic BTC by providing collateral at a 150% ratio. You must maintain a collateral ratio above 120% to avoid liquidation.
                             </p>
                         </div>
                     </div>

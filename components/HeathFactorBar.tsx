@@ -11,8 +11,8 @@ const HealthFactorBar = ({ healthFactor, liquidationThreshold = 120 }: any) => {
         <div className="space-y-1">
             <div className="flex justify-between text-xs">
                 <span>Health Factor</span>
-                <span className={`${healthFactor >= 200 ? 'text-green-400' : healthFactor >= 150 ? 'text-yellow-400' : 'text-red-400'}`}>
-                    {healthFactor >= 200 ? 'Safe' : healthFactor >= 150 ? 'OK' : 'Risk'}
+                <span className={`${healthFactor >= 200 ? 'text-green-400' : healthFactor >= 150 ? 'text-blue-400' : 'text-yellow-400'}`}>
+                    {healthFactor >= 200 ? 'Safe' : healthFactor >= 150 ? 'Healthy' : 'Caution'}
                 </span>
             </div>
             <div className="w-full h-2 bg-slate-600 rounded-full   relative">
@@ -37,8 +37,8 @@ const HealthFactorBar = ({ healthFactor, liquidationThreshold = 120 }: any) => {
             <div className="flex justify-between text-xs">
                 <span className="text-slate-500">Risky</span>
                 {/* Liquidation indicator label */}
-                <span className="text-red-400 text-xs" style={{ marginLeft: `100px` }}>
-                    Liquidation
+                <span className="text-red-400 text-xs" style={{ marginLeft: `160px` }}>
+                    Min Collateral Ratio
                 </span>
                 <span className="text-slate-500">Safe</span>
             </div>
