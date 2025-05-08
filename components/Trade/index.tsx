@@ -216,6 +216,10 @@ const TradeContainer = () => {
                     style={{ width: `${utilizationRate}%` }}
                   />
                 </div>
+                <div className="flex justify-between text-xs mt-1">
+                    <span className="text-slate-500">0%</span>
+                    <span className="text-slate-500">100%</span>
+                </div>
               </div>
 
 

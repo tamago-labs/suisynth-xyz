@@ -94,7 +94,7 @@ const SupplyPanel = ({ increaseTick }: any) => {
                         <div>
                             <h4 className="font-medium text-purple-400">Lending Pool</h4>
                             <p className="text-slate-300 text-sm mt-1">
-                                Supply your synthetic BTC to the lending pool to earn XXX% APY from borrowers who use leverage. You can withdraw your supplied assets anytime, subject to pool liquidity.
+                                Supply your synthetic BTC to the lending pool to earn {poolData ? poolData?.lendingPool?.supplyRate : 0}% APY from borrowers who use leverage. You can withdraw your supplied assets anytime, subject to pool liquidity.
                             </p>
                         </div>
                     </div>
@@ -133,21 +133,21 @@ const SupplyPanel = ({ increaseTick }: any) => {
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">APY</span>
                                 <span className="text-green-400">
-                                    {/* {marketData.suiBTC.supplyAPY}% */}
+                                    {poolData?.lendingPool?.supplyRate}%
                                 </span>
                             </div>
 
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">Estimated Daily Earnings</span>
                                 <span>
-                                    {/* {((parseFloat(supplyAmount) * marketData.suiBTC.supplyAPY / 100) / 365).toFixed(8)} suiBTC */}
+                                    {((parseFloat(supplyAmount) * (poolData ? poolData?.lendingPool?.supplyRate : 0 ) / 100) / 365).toFixed(8)} suiBTC
                                 </span>
                             </div>
 
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">Estimated Monthly Earnings</span>
                                 <span>
-                                    {/* {((parseFloat(supplyAmount) * marketData.suiBTC.supplyAPY / 100) / 12).toFixed(8)} suiBTC */}
+                                    {((parseFloat(supplyAmount) * (poolData ? poolData?.lendingPool?.supplyRate : 0 ) / 100) / 12).toFixed(8)} suiBTC
                                 </span>
                             </div>
                         </div>

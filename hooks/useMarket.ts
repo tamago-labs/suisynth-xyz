@@ -135,7 +135,46 @@ const useMarket = () => {
         [client]
     )
 
+    const listSupplyPositions = useCallback(
+        async (address: any) => {
+ 
+            let dynamicFieldPage = await client.getDynamicFields({
+                parentId: "0xd2bf035565dadd174acaeb07813f69eb5ae74b99f7a4b6315b650b7dae24fce6"
+            });
+ 
+            let output: any = [];
 
+            for (let position of dynamicFieldPage.data) {
+                const { objectId, name } = position;
+
+                if (name.value === address) {
+                    const result: any = await client.getObject({
+                        id: objectId,
+                        options: {
+                            showType: false,
+                            showOwner: true,
+                            showPreviousTransaction: false,
+                            showDisplay: false,
+                            showContent: true,
+                            showBcs: false,
+                            showStorageRebate: false,
+                        },
+                    }); 
+                    const fields = result.data.content.fields.value.fields; 
+                    
+                    output.push({
+                        accruedInterest: parseAmount(BigNumber(fields?.accrued_interest), 9),
+                        suppliedAmount: parseAmount(BigNumber(fields?.supplied_amount), 9),
+                         
+                    })
+                }
+
+            }
+
+            return output;
+        },
+        [client]
+    )
 
     const fetchPools = useCallback(async () => {
 
@@ -412,6 +451,42 @@ const useMarket = () => {
         [wallet, client]
     );
 
+    const withdraw = useCallback(async (
+        sui_btc_amount: number
+    ) => {
+        if (!wallet) {
+            return;
+        }
+
+        const { account } = wallet
+        const address = account && account?.address
+
+        if (!address) {
+            return;
+        }
+
+        const tx = new Transaction();
+        tx.setGasBudget(10000000);
+
+        tx.moveCall({
+            target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::withdraw_suibtc`,
+            arguments: [
+                tx.object(
+                    "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8"
+                ),
+                tx.pure.u64(`${(BigNumber(sui_btc_amount).multipliedBy(10 ** 9)).toFixed(0)}`)
+            ],
+        });
+
+        const params: any = {
+            transaction: tx
+        }
+
+        await wallet.signAndExecuteTransaction(params);
+    },
+        [wallet, client]
+    );
+
     const addCollateral = useCallback(async (
         collateral_amount: number,
         collateral_asset_type: string
@@ -546,7 +621,7 @@ const useMarket = () => {
                 tx.pure.u64(`${(BigNumber(leverage).multipliedBy(10 ** 4)).toFixed(0)}`)
             ],
         });
- 
+
         const params: any = {
             transaction: tx
         }
@@ -565,10 +640,12 @@ const useMarket = () => {
         fetchPools,
         mint,
         listMintPositions,
+        listSupplyPositions,
         addCollateral,
         burn,
         supply,
-        borrow
+        borrow,
+        withdraw
     }
 }
 

@@ -54,9 +54,10 @@ const MarketsContainer = () => {
   const address = account && account?.address
   const isTestnet = connected && account && account.chains && account.chains[0] === "sui:testnet" ? true : false
 
-  const { listMintPositions, addCollateral, burn } = useMarket()
+  const { listMintPositions, listSupplyPositions, addCollateral, burn, withdraw } = useMarket()
 
   const [mintPositions, setMintPositions] = useState<any>([])
+  const [supplyPositions, setSupplyPositions] = useState<any>([])
 
   // State for selected collateral type 
   const [supplyAmount, setSupplyAmount] = useState('');
@@ -92,21 +93,12 @@ const MarketsContainer = () => {
     })
   }, [tick])
 
-
-  const supplyPositions: any = [
-    // {
-    //   id: 'supply-1',
-    //   asset: 'suiBTC',
-    //   amount: 0.02,
-    //   valueUSD: 851.36,
-    //   apy: 5.8,
-    //   suppliedAt: '2025-04-28'
-    // }
-  ];
-
   useEffect(() => {
     if (address && isTestnet) {
       listMintPositions(address).then(setMintPositions)
+      setTimeout(() => {
+        listSupplyPositions(address).then(setSupplyPositions)
+      }, 1000)
     }
 
   }, [address, isTestnet, tick])
@@ -223,12 +215,56 @@ const MarketsContainer = () => {
     setShowWithdrawModal(true);
   };
 
-  const executeWithdraw = () => {
-    // This would call your contract
-    console.log(`Withdrawing ${withdrawAmount} ${selectedPosition.asset} from supply position`);
-    setShowWithdrawModal(false);
-    setWithdrawAmount('');
-  };
+ 
+
+  const executeWithdraw = useCallback(async () => {
+
+    dispatch({
+      errorMessage: undefined
+    })
+
+
+    const amount = parseFloat(withdrawAmount)
+
+    if (amount === 0) {
+      dispatch({
+        errorMessage: "Invalid withdraw amount"
+      })
+      return
+    }
+
+    dispatch({
+      loading: true
+    })
+
+    try {
+
+      await withdraw(
+        amount
+      )
+
+      setShowWithdrawModal(false);
+      setWithdrawAmount('');
+
+      dispatch({
+        tick: tick + 1,
+        loading: false
+      })
+
+    } catch (error: any) {
+      console.log(error)
+      dispatch({
+        errorMessage: `${error.message}`,
+        loading: false
+      })
+    }
+
+  }, [
+    withdrawAmount,
+    tick,
+    withdraw
+  ])
+
 
   const newCRatio = (selectedPosition && reclaimAmount) ? Math.floor(selectedPosition.collateralRatio * (1 - parseFloat(reclaimAmount) / selectedPosition.collateralAmount)) : 150
   const utilizationRate = poolData ? ((poolData.lendingPool.totalBorrowed * 100) / poolData.lendingPool.totalSupplied) : 0
@@ -334,9 +370,9 @@ const MarketsContainer = () => {
 
                       {supplyPositions.length > 0 ? (
                         <div className="space-y-3">
-                          {supplyPositions.map(position => (
+                          {supplyPositions.map((position: any, index: number) => (
                             <div
-                              key={position.id}
+                              key={index}
                               className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50"
                             >
                               <div className="flex justify-between items-center mb-3">
@@ -345,37 +381,39 @@ const MarketsContainer = () => {
                                     <Bitcoin className="text-orange-500" size={16} />
                                   </div>
                                   <div>
-                                    <div className="font-medium">{position.asset}</div>
+                                    <div className="font-medium">suiBTC</div>
                                     <div className="text-xs text-slate-400">Supplied</div>
                                   </div>
                                 </div>
                                 <div className="bg-green-500/20 text-green-400 rounded-lg px-2 py-1 text-xs font-medium">
-                                  APY: {marketData.suiBTC.supplyAPY}%
+                                  APY: {poolData ? poolData.lendingPool.supplyRate : 0}%
                                 </div>
                               </div>
 
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                                 <div>
                                   <div className="text-slate-400 text-xs">Amount</div>
-                                  <div>{position.amount} {position.asset}</div>
+                                  <div>{position.suppliedAmount.toFixed(8)} suiBTC</div>
                                 </div>
                                 <div>
                                   <div className="text-slate-400 text-xs">Value</div>
-                                  <div>${position.valueUSD.toLocaleString()}</div>
+                                  <div>${(poolData ? (position.suppliedAmount * poolData.prices.BTC) : 0).toLocaleString()}</div>
                                 </div>
                                 <div>
-                                  <div className="text-slate-400 text-xs">Daily Yield</div>
-                                  <div>{((position.amount * marketData.suiBTC.supplyAPY / 100) / 365).toFixed(8)} {position.asset}</div>
+                                  <div className="text-slate-400 text-xs">Accrued Interest</div>
+                                  <div>{(position.accruedInterest).toFixed(8)} suiBTC</div>
                                 </div>
-                                <div>
-                                  <div className="text-slate-400 text-xs">Supplied On</div>
-                                  <div>{position.suppliedAt}</div>
-                                </div>
+                                {poolData && (
+                                  <div>
+                                    <div className="text-slate-400 text-xs">Daily Yield</div>
+                                    <div>{((position.suppliedAmount * poolData.lendingPool.supplyRate / 100) / 365).toFixed(8)} suiBTC</div>
+                                  </div>
+                                )}
                               </div>
 
                               <div className="mt-4 pt-4 border-t border-slate-600/50">
                                 <button
-                                  className="w-full py-2 text-xs bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-md transition-colors"
+                                  className="w-full py-2 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded-md transition-colors"
                                   onClick={() => handleWithdraw(position)}
                                 >
                                   Withdraw
@@ -541,24 +579,21 @@ const MarketsContainer = () => {
               <div className="bg-slate-700/50 rounded-lg p-4">
                 <h4 className="font-medium text-white mb-3">Supply Information</h4>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Asset:</span>
-                    <span>{selectedPosition.asset}</span>
-                  </div>
+
                   <div className="flex justify-between">
                     <span className="text-slate-400">Supplied Amount:</span>
-                    <span>{selectedPosition.amount} {selectedPosition.asset}</span>
+                    <span>{selectedPosition.suppliedAmount} suiBTC</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Current Value:</span>
-                    <span>${selectedPosition.valueUSD.toLocaleString()}</span>
+                    {poolData && (<span>${(selectedPosition.suppliedAmount * poolData.prices.BTC).toLocaleString()}</span>)}
                   </div>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">
-                  Withdraw Amount ({selectedPosition.asset})
+                  Withdraw Amount (suiBTC)
                 </label>
                 <div className="relative">
                   <input
@@ -568,19 +603,14 @@ const MarketsContainer = () => {
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                   />
-                  <button
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 hover:text-purple-300"
-                    onClick={() => setWithdrawAmount(selectedPosition.amount.toString())}
-                  >
-                    MAX
-                  </button>
+
                 </div>
 
                 <div className="flex justify-between mt-1 text-xs text-slate-500">
-                  <button onClick={() => setWithdrawAmount((selectedPosition.amount * 0.25).toFixed(8))}>25%</button>
-                  <button onClick={() => setWithdrawAmount((selectedPosition.amount * 0.5).toFixed(8))}>50%</button>
-                  <button onClick={() => setWithdrawAmount((selectedPosition.amount * 0.75).toFixed(8))}>75%</button>
-                  <button onClick={() => setWithdrawAmount(selectedPosition.amount.toString())}>100%</button>
+                  <button className='hover:text-white cursor-pointer' onClick={() => setWithdrawAmount((selectedPosition.suppliedAmount * 0.25).toFixed(8))}>25%</button>
+                  <button className='hover:text-white cursor-pointer' onClick={() => setWithdrawAmount((selectedPosition.suppliedAmount * 0.5).toFixed(8))}>50%</button>
+                  <button className='hover:text-white cursor-pointer' onClick={() => setWithdrawAmount((selectedPosition.suppliedAmount * 0.75).toFixed(8))}>75%</button>
+                  <button className='hover:text-white cursor-pointer' onClick={() => setWithdrawAmount(selectedPosition.suppliedAmount.toString())}>100%</button>
                 </div>
               </div>
 
@@ -591,13 +621,13 @@ const MarketsContainer = () => {
                     <div className="flex justify-between">
                       <span className="text-slate-400">Remaining Supply:</span>
                       <span>
-                        {Math.max(0, selectedPosition.amount - parseFloat(withdrawAmount)).toFixed(8)} {selectedPosition.asset}
+                        {Math.max(0, selectedPosition.suppliedAmount - parseFloat(withdrawAmount)).toFixed(8)} suiBTC
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Value to Receive:</span>
                       <span>
-                        ${(parseFloat(withdrawAmount) * marketData.suiBTC.price).toLocaleString()}
+                        ${(parseFloat(withdrawAmount) * (poolData ? poolData.prices.BTC : 1)).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -606,19 +636,34 @@ const MarketsContainer = () => {
 
               <div className="pt-4 flex gap-3">
                 <button
+                  onClick={executeWithdraw}
+                  className="w-1/2 py-2 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg transition-colors"
+                  disabled={loading || !withdrawAmount || parseFloat(withdrawAmount) <= 0}
+                > 
+                  {loading
+                    ?
+                    <RefreshCw
+                      className='mx-auto animate-spin'
+                    />
+                    :
+                    <>
+                     Withdraw Assets
+                    </>
+                  }
+                </button>
+                <button
                   onClick={() => setShowWithdrawModal(false)}
                   className="w-1/2 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={executeWithdraw}
-                  className="w-1/2 py-2 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg transition-colors"
-                  disabled={!withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > selectedPosition.amount}
-                >
-                  Withdraw Assets
-                </button>
+
               </div>
+              {errorMessage && (
+                <p className="text-sm text-center mt-2 text-white">
+                  {errorMessage}
+                </p>
+              )}
             </div>
           </motion.div>
         </div>

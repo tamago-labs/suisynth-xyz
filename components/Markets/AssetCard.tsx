@@ -27,7 +27,7 @@ const AssetCard = ({ marketData, utilizationRate }: any) => {
 
     const { poolData } = useContext(AccountContext)
 
- 
+
 
     return (
         <motion.div
@@ -62,7 +62,7 @@ const AssetCard = ({ marketData, utilizationRate }: any) => {
                 <div className="bg-slate-700/50 rounded-lg p-3">
                     <div className="text-xs text-slate-400 mb-1">Supply APY</div>
                     <div className="font-semibold text-green-400">
-                    {Number(poolData?.lendingPool?.supplyRate || 0).toFixed(2)} %</div>
+                        {Number(poolData?.lendingPool?.supplyRate || 0).toFixed(2)} %</div>
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-3">
@@ -77,7 +77,10 @@ const AssetCard = ({ marketData, utilizationRate }: any) => {
             </div>
 
             <div className="mt-6">
-                <div className="text-sm text-slate-400 mb-2">Utilization</div>
+                <div className="flex justify-between text-sm text-slate-400 mb-2">
+                    <span>Utilization</span>
+                    <span>{utilizationRate.toFixed(2)}%</span>
+                </div>
                 <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
                     <div
                         className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
