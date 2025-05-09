@@ -14,9 +14,8 @@ const Footer = () => {
          
         {/* Social links and disclaimer */}
         <div className=" mt-6  flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex gap-6">
-            {/* Simple circles instead of icons */}
-            {[1, 2, 3].map((_, i) => (
+          <div className="flex gap-6"> 
+            {/* {[1, 2, 3].map((_, i) => (
               <a 
                 key={i} 
                 href="#" 
@@ -24,7 +23,7 @@ const Footer = () => {
               >
                 <div className="w-3 h-3 rounded-full bg-blue-400" />
               </a>
-            ))}
+            ))} */}
           </div>
           
           <p className="text-slate-500 text-sm text-center md:text-right">

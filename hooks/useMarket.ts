@@ -137,11 +137,11 @@ const useMarket = () => {
 
     const listSupplyPositions = useCallback(
         async (address: any) => {
- 
+
             let dynamicFieldPage = await client.getDynamicFields({
                 parentId: "0xd2bf035565dadd174acaeb07813f69eb5ae74b99f7a4b6315b650b7dae24fce6"
             });
- 
+
             let output: any = [];
 
             for (let position of dynamicFieldPage.data) {
@@ -159,14 +159,87 @@ const useMarket = () => {
                             showBcs: false,
                             showStorageRebate: false,
                         },
-                    }); 
-                    const fields = result.data.content.fields.value.fields; 
-                    
+                    });
+                    const fields = result.data.content.fields.value.fields;
+
                     output.push({
                         accruedInterest: parseAmount(BigNumber(fields?.accrued_interest), 9),
                         suppliedAmount: parseAmount(BigNumber(fields?.supplied_amount), 9),
-                         
+
                     })
+                }
+
+            }
+
+            return output;
+        },
+        [client]
+    )
+
+    const listActivePositions = useCallback(
+        async (address: any) => {
+
+            let dynamicFieldPage = await client.getDynamicFields({
+                parentId: "0x20384479c92d559ca74b207020c1dff4d150d02b76ad17238e6eab1447ebfb7a"
+            });
+
+            let output: any = [];
+
+            for (let position of dynamicFieldPage.data) {
+                const { objectId, name } = position;
+
+                if (name.value === address) {
+                    const result: any = await client.getObject({
+                        id: objectId,
+                        options: {
+                            showType: false,
+                            showOwner: true,
+                            showPreviousTransaction: false,
+                            showDisplay: false,
+                            showContent: true,
+                            showBcs: false,
+                            showStorageRebate: false,
+                        },
+                    });
+                    const fields = result.data.content.fields.value.fields;
+ 
+                    const tableId = fields.collateral.fields.id.id;
+                    const dynamicFieldPage = await client.getDynamicFields({
+                        parentId: tableId,
+                    });
+
+                    let positionInfo: any = {
+                        accruedInterest: parseAmount(BigNumber(fields?.accrued_interest), 9),
+                        borrowedAmount: parseAmount(BigNumber(fields?.borrowed_amount), 9),
+                        entryBtcPrice: parseAmount(BigNumber(fields?.entry_btc_price), 4),
+                        entryCollateralPrice: parseAmount(BigNumber(fields?.entry_collateral_price), 4),
+                        leverage: parseAmount(BigNumber(fields?.leverage), 4)
+                    }
+
+                    for (let pool of dynamicFieldPage.data) {
+                        const { objectId } = pool;
+                        const result: any = await client.getObject({
+                            id: objectId,
+                            options: {
+                                showType: false,
+                                showOwner: false,
+                                showPreviousTransaction: false,
+                                showDisplay: false,
+                                showContent: true,
+                                showBcs: false,
+                                showStorageRebate: false,
+                            },
+                        });
+
+                        const assetType = result.data.content.fields.name.fields.name
+                        const value = result.data.content.fields.value;
+
+                        positionInfo.collateralType = assetType === "ddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC" ? "USDC" : "SUI"
+                        positionInfo.collateralAmount = parseAmount(BigNumber(value), 9)
+                    }
+
+                    output.push(positionInfo)
+
                 }
 
             }
@@ -641,6 +714,7 @@ const useMarket = () => {
         mint,
         listMintPositions,
         listSupplyPositions,
+        listActivePositions,
         addCollateral,
         burn,
         supply,

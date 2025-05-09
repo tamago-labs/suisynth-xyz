@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback, useContext, useState, useReducer } from 'react';
+import React, { useEffect, useCallback, useContext, useState, useReducer } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bitcoin,
@@ -21,33 +21,42 @@ import {
 import WalletPanel from '../Wallet';
 import { AccountContext } from '@/hooks/useAccount';
 import useMarket from '@/hooks/useMarket';
+import { useWallet } from '@suiet/wallet-kit'
 
 const TradeContainer = () => {
 
-  const { borrow } = useMarket()
+  const { borrow, listActivePositions } = useMarket()
 
   const [values, dispatch] = useReducer(
     (curVal: any, newVal: any) => ({ ...curVal, ...newVal }),
     {
       loading: false,
-      errorMessage: undefined
+      errorMessage: undefined,
+      tick: 1
     }
   )
 
-  const { errorMessage, loading } = values
+  const { errorMessage, loading, tick } = values
+
+  const wallet = useWallet()
+  const { account, connected } = wallet
+  const address = account && account?.address
+  const isTestnet = connected && account && account.chains && account.chains[0] === "sui:testnet" ? true : false
 
   const { poolData, balances } = useContext(AccountContext)
 
   // State
-  const [collateralType, setCollateralType] = useState('USDC');
+  const [collateralType, setCollateralType] = useState<any>('USDC');
   const [showCollateralSelector, setShowCollateralSelector] = useState(false);
-  const [collateralAmount, setCollateralAmount] = useState('');
+  const [collateralAmount, setCollateralAmount] = useState<any>('');
   const [leverage, setLeverage] = useState(3); // Default to 3x as in example
   const [showPositions, setShowPositions] = useState(true);
   const [showLiquidationModal, setShowLiquidationModal] = useState(false);
-  const [cashOutAmount, setCashOutAmount] = useState('');
+  const [cashOutAmount, setCashOutAmount] = useState<any>('');
   const [showCashOutModal, setShowCashOutModal] = useState(false);
-  const [selectedPosition, setSelectedPosition] = useState(null);
+  const [selectedPosition, setSelectedPosition] = useState<any>(null);
+
+  const [activePositions, setActivePositions] = useState<any>([])
 
   // Mock data
   const marketData = {
@@ -69,31 +78,45 @@ const TradeContainer = () => {
     suiBTC: 0.12
   };
 
+  const increaseTick = useCallback(() => {
+    dispatch({
+      tick: tick + 1
+    })
+  }, [tick])
+
+  useEffect(() => {
+    if (address && isTestnet) {
+      listActivePositions(address).then(setActivePositions)
+
+    }
+
+  }, [address, isTestnet, tick])
+
 
   // Active positions - including the example from your test case
-  const activePositions = [
-    {
-      id: 'pos-1',
-      asset: 'suiBTC',
-      collateralType: 'USDC',
-      collateral: 5, // USDC (showing remaining after 50% cash out)
-      borrowed: 0.00025, // suiBTC
-      leverage: 3,
-      entryPrice: 60000,
-      currentPrice: 72000,
-      pnl: 0.8, // 20% profit on half of initial 10 USDC position (after cashing out)
-      pnlPercent: 20,
-      healthFactor: 182,
-      liquidationPrice: 45000,
-      btcProfit: 0.00004166 // as per test example
-    }
-  ];
+  // const activePositions = [
+  //   {
+  //     id: 'pos-1',
+  //     asset: 'suiBTC',
+  //     collateralType: 'USDC',
+  //     collateral: 5, // USDC (showing remaining after 50% cash out)
+  //     borrowed: 0.00025, // suiBTC
+  //     leverage: 3,
+  //     entryPrice: 60000,
+  //     currentPrice: 72000,
+  //     pnl: 0.8, // 20% profit on half of initial 10 USDC position (after cashing out)
+  //     pnlPercent: 20,
+  //     healthFactor: 182,
+  //     liquidationPrice: 45000,
+  //     btcProfit: 0.00004166 // as per test example
+  //   }
+  // ];
 
   const borrowedAmount = calculateBorrowedAmount(collateralType, collateralAmount, poolData, leverage);
   const positionDetails = calculatePositionDetails(collateralType, collateralAmount, poolData, leverage);
 
   // Handle cash out calculation
-  const calculateCashOut = (position, percentage) => {
+  const calculateCashOut = (position: any, percentage: any) => {
     if (!position) return null;
 
     const cashOutCollateral = (position.collateral * percentage) / 100;
@@ -217,8 +240,8 @@ const TradeContainer = () => {
                   />
                 </div>
                 <div className="flex justify-between text-xs mt-1">
-                    <span className="text-slate-500">0%</span>
-                    <span className="text-slate-500">100%</span>
+                  <span className="text-slate-500">0%</span>
+                  <span className="text-slate-500">100%</span>
                 </div>
               </div>
 
@@ -543,9 +566,9 @@ const TradeContainer = () => {
                 <div className="mt-4">
                   {activePositions.length > 0 ? (
                     <div className="space-y-4">
-                      {activePositions.map(position => (
+                      {activePositions.map((position: any, index: number) => (
                         <div
-                          key={position.id}
+                          key={index}
                           className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50"
                         >
                           <div className="flex justify-between items-center mb-3">
@@ -554,39 +577,39 @@ const TradeContainer = () => {
                                 <Bitcoin className="text-orange-500" size={16} />
                               </div>
                               <div>
-                                <div className="font-medium">{position.asset}</div>
+                                <div className="font-medium">suiBTC</div>
                                 <div className="text-xs text-slate-400">{position.leverage}x Long</div>
                               </div>
                             </div>
-                            <div className={`px-2 py-1 rounded-md text-xs font-medium ${position.pnl >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {/* <div className={`px-2 py-1 rounded-md text-xs font-medium ${position.pnl >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                               {position.pnl >= 0 ? '+' : ''}{position.pnl} {position.collateralType} ({position.pnlPercent}%)
-                            </div>
+                            </div> */}
                           </div>
 
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                             <div>
                               <div className="text-slate-400 text-xs">Collateral</div>
-                              <div>{position.collateral} {position.collateralType}</div>
+                              <div>{position.collateralAmount} {position.collateralType}</div>
                             </div>
                             <div>
                               <div className="text-slate-400 text-xs">Size</div>
-                              <div>{position.borrowed} {position.asset}</div>
+                              <div>{position.borrowedAmount} suiBTC</div>
                             </div>
                             <div>
                               <div className="text-slate-400 text-xs">Entry Price</div>
-                              <div>${position.entryPrice.toLocaleString()}</div>
+                              <div>${position.entryBtcPrice.toLocaleString()}</div>
                             </div>
                             <div>
                               <div className="text-slate-400 text-xs">Current Price</div>
-                              <div>${position.currentPrice.toLocaleString()}</div>
+                              <div>${poolData?.prices?.BTC.toLocaleString()}</div>
                             </div>
                             <div>
                               <div className="text-slate-400 text-xs">Health</div>
-                              <div className="text-green-400">{position.healthFactor}%</div>
+                              <div className="text-green-400">{100}%</div>
                             </div>
                             <div>
                               <div className="text-slate-400 text-xs">Liquidation</div>
-                              <div className="text-red-400">${position.liquidationPrice.toLocaleString()}</div>
+                              <div className="text-red-400">${50000}</div>
                             </div>
                           </div>
 
@@ -612,7 +635,7 @@ const TradeContainer = () => {
                           <div className="mt-3 pt-3 border-t border-slate-600/50">
                             <div className="flex justify-between text-xs">
                               <span className="text-slate-400">Profit in suiBTC:</span>
-                              <span className="text-green-400">{position.btcProfit.toFixed(8)} suiBTC (${(position.btcProfit * position.currentPrice).toFixed(2)})</span>
+                              {/* <span className="text-green-400">{position.btcProfit.toFixed(8)} suiBTC (${(position.btcProfit * position.currentPrice).toFixed(2)})</span> */}
                             </div>
                           </div>
                         </div>
