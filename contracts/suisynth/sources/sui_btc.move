@@ -34,6 +34,7 @@ module suisynth::sui_btc {
     use std::option::{Self};
 
     use switchboard::aggregator::{Aggregator, CurrentResult}; 
+    use sui::event;
 
     // ======== Constants ========
 
@@ -57,6 +58,131 @@ module suisynth::sui_btc {
     const ERR_STILL_DEBT: u64 = 18;
     const ERR_NO_PROFIT: u64 = 19;
     const ERR_INSUFFICIENT_LIQUIDITY: u64 = 20;
+
+    // ======== Events =========
+
+    // Events for synthetic asset minting and burning
+    public struct MintEvent has copy, drop {
+        sender: address,
+        collateral_type: TypeName,
+        collateral_amount: u64,
+        suibtc_amount: u64,
+        collateral_ratio: u64,
+        fee_amount: u64
+    }
+
+    public struct BurnEvent has copy, drop {
+        sender: address,
+        collateral_type: TypeName,
+        collateral_withdrawn: u64,
+        suibtc_burned: u64,
+        fee_amount: u64
+    }
+
+    public struct AddCollateralEvent has copy, drop {
+        sender: address,
+        collateral_type: TypeName,
+        collateral_amount: u64,
+        new_collateral_ratio: u64
+    }
+
+    public struct LiquidationEvent has copy, drop {
+        target: address,
+        liquidator: address,
+        collateral_type: TypeName,
+        collateral_seized: u64,
+        debt_repaid: u64,
+        collateral_ratio: u64
+    }
+
+    // Events for lending pool
+    public struct SupplyEvent has copy, drop {
+        sender: address,
+        suibtc_amount: u64,
+        supply_rate: u64,
+        total_supplied: u64,
+        utilization_rate: u64
+    }
+
+    public struct WithdrawEvent has copy, drop {
+        sender: address,
+        suibtc_amount: u64,
+        remaining_supplied: u64,
+        supply_rate: u64,
+        utilization_rate: u64
+    }
+
+    public struct BorrowWithLeverageEvent has copy, drop {
+        sender: address,
+        collateral_type: TypeName,
+        collateral_amount: u64,
+        borrowed_amount: u64,
+        leverage: u64,
+        entry_btc_price: u64,
+        entry_collateral_price: u64,
+        borrow_rate: u64,
+        utilization_rate: u64
+    }
+
+    public struct RepayLoanEvent has copy, drop {
+        sender: address,
+        repay_amount: u64,
+        remaining_debt: u64,
+        accrued_interest: u64,
+        interest_paid: u64,
+        utilization_rate: u64
+    }
+
+    public struct CashOutPositionEvent has copy, drop {
+        sender: address,
+        collateral_type: TypeName,
+        percentage: u64,
+        collateral_withdrawn: u64,
+        profit_btc: u64,
+        debt_reduced: u64
+    }
+
+    public struct WithdrawCollateralEvent has copy, drop {
+        sender: address,
+        collateral_type: TypeName,
+        amount: u64,
+        remaining_collateral: u64,
+        remaining_debt: u64
+    }
+
+    public struct LiquidateLeveragedPositionEvent has copy, drop {
+        borrower: address,
+        liquidator: address,
+        collateral_type: TypeName,
+        collateral_seized: u64,
+        debt_repaid: u64
+    }
+
+    // Governance events
+    public struct CollateralPoolCreatedEvent has copy, drop {
+        collateral_type: TypeName,
+        min_c_ratio: u64,
+        liq_threshold: u64,
+        liq_penalty: u64,
+        mint_fee: u64,
+        burn_fee: u64,
+        price: u64
+    }
+
+    public struct UpdatePriceEvent has copy, drop {
+        price_type: String,
+        asset_type: TypeName,
+        old_price: u64,
+        new_price: u64
+    }
+
+    public struct DistributeFeeEvent has copy, drop {
+        staker_address: address,
+        treasury_address: address,
+        staker_amount: u64,
+        treasury_amount: u64,
+        total_fees: u64
+    }
 
     // ======== Structs =========
 
@@ -254,6 +380,16 @@ module suisynth::sui_btc {
         
         // Add fee to protocol fee pool
         balance::join(&mut global.fee_pool, balance::increase_supply(&mut global.syth_supply, fee_amount));
+
+        // Emit mint event
+        event::emit(MintEvent {
+            sender,
+            collateral_type: get<X>(),
+            collateral_amount,
+            suibtc_amount: sui_btc_amount,
+            collateral_ratio: ((collateral_value * 10000 / sui_btc_value) as u64),
+            fee_amount
+        });
     }
 
     // Burn suiBTC and withdraw collateral
@@ -356,9 +492,17 @@ module suisynth::sui_btc {
             let position = table::borrow_mut(&mut pool.positions, sender);
             position.last_update_time = tx_context::epoch(ctx);
         };
-
         balance::join(&mut global.fee_pool, fee_balance);  
         balance::decrease_supply(&mut global.syth_supply, burn_balance);
+
+        // Emit burn event
+        event::emit(BurnEvent {
+            sender,
+            collateral_type: get<X>(),
+            collateral_withdrawn: collateral_amount,
+            suibtc_burned: sui_btc_amount,
+            fee_amount
+        });
     }
 
     // Add more collateral to an existing position
@@ -407,9 +551,19 @@ module suisynth::sui_btc {
             position.last_collateral_ratio = 18446744073709551615;
         };
     
+        // Capture data for event
+        let new_collateral_ratio = position.last_collateral_ratio;
+        
         // Update last update time
         position.last_update_time = tx_context::epoch(ctx);
 
+        // Emit add collateral event
+        event::emit(AddCollateralEvent {
+            sender,
+            collateral_type: get<X>(),
+            collateral_amount,
+            new_collateral_ratio
+        });
     }
 
     // Liquidate an undercollateralized position
@@ -521,7 +675,21 @@ module suisynth::sui_btc {
             position.last_update_time = tx_context::epoch(ctx);
         };
 
+        // Store collateral ratio for event
+        let collateral_ratio_for_event = current_ratio as u64;
+        
+        // Decrease supply
         balance::decrease_supply(&mut global.syth_supply, burn_balance);
+
+        // Emit liquidation event
+        event::emit(LiquidationEvent {
+            target,
+            liquidator,
+            collateral_type: get<X>(),
+            collateral_seized: collateral_to_seize,
+            debt_repaid: debt_to_repay,
+            collateral_ratio: collateral_ratio_for_event
+        });
     }
 
     // ======== Lending Pool Functions =========
@@ -564,8 +732,28 @@ module suisynth::sui_btc {
             table::add(&mut global.lending_pool.suppliers, sender, new_position);
         };
         
+        // Collect data for event before updating interest rates
+        let pre_update_supply_rate = global.lending_pool.supply_rate;
+        let total_supplied = balance::value(&global.lending_pool.total_suibtc);
+        
         // Update interest rates based on new utilization
-        update_interest_rates(global); 
+        update_interest_rates(global);
+
+        // Calculate utilization rate for the event
+        let utilization_rate = if (total_supplied == 0) {
+            0
+        } else {
+            ((global.lending_pool.total_borrowed as u128) * 10000) / (total_supplied as u128)
+        };
+
+        // Emit supply event
+        event::emit(SupplyEvent {
+            sender,
+            suibtc_amount: sui_btc_amount,
+            supply_rate: pre_update_supply_rate,
+            total_supplied,
+            utilization_rate: utilization_rate as u64
+        });
     }
 
     // Withdraw suiBTC from the lending pool
@@ -618,8 +806,33 @@ module suisynth::sui_btc {
         let sui_btc = coin::from_balance(withdrawn_balance, ctx);
         transfer::public_transfer(sui_btc, sender);
         
+        // Collect data for event before updating interest rates
+        let remaining_supplied = if (table::contains(&global.lending_pool.suppliers, sender)) {
+            table::borrow(&global.lending_pool.suppliers, sender).supplied_amount
+        } else {
+            0
+        };
+        let pre_update_supply_rate = global.lending_pool.supply_rate;
+        let total_supplied = balance::value(&global.lending_pool.total_suibtc);
+        
         // Update interest rates based on new utilization
         update_interest_rates(global);
+
+        // Calculate utilization rate for the event
+        let utilization_rate = if (total_supplied == 0) {
+            0
+        } else {
+            ((global.lending_pool.total_borrowed as u128) * 10000) / (total_supplied as u128)
+        };
+
+        // Emit withdraw event
+        event::emit(WithdrawEvent {
+            sender,
+            suibtc_amount: amount,
+            remaining_supplied,
+            supply_rate: pre_update_supply_rate,
+            utilization_rate: utilization_rate as u64
+        });
     }
 
     // Borrow suiBTC with leverage
@@ -738,8 +951,37 @@ module suisynth::sui_btc {
         // Update global borrowed amount
         global.lending_pool.total_borrowed = global.lending_pool.total_borrowed + (borrow_amount as u64);
         
+        // Store data for event
+        let event_borrowed_amount = (borrow_amount as u64);
+        let entry_btc_price_copy = btc_price_oracle;
+        let entry_collateral_price_copy = pool_price_oracle;
+        let pre_update_borrow_rate = global.lending_pool.borrow_rate;
+        let total_supplied = balance::value(&global.lending_pool.total_suibtc);
+        
         // Update interest rates based on new utilization
         update_interest_rates(global);
+
+        // Calculate utilization rate for the event
+        let utilization_rate = if (total_supplied == 0) {
+            0
+        } else {
+            ((global.lending_pool.total_borrowed as u128) * 10000) / (total_supplied as u128)
+        };
+
+        // Emit borrow with leverage event
+        if (borrow_amount > 0) {
+            event::emit(BorrowWithLeverageEvent {
+                sender,
+                collateral_type: get<X>(),
+                collateral_amount,
+                borrowed_amount: event_borrowed_amount,
+                leverage,
+                entry_btc_price: entry_btc_price_copy,
+                entry_collateral_price: entry_collateral_price_copy,
+                borrow_rate: pre_update_borrow_rate,
+                utilization_rate: utilization_rate as u64
+            });
+        };
     }
 
     // Repay borrowed suiBTC from leveraged position
@@ -778,7 +1020,22 @@ module suisynth::sui_btc {
             repay_amount
         };
         
-        // Apply repayment to accrued interest first
+        // Get data for event
+        let repay_amount_copy = actual_repay_amount;
+        let accrued_interest_copy = position.accrued_interest;
+        
+        // Calculate interest payment
+        let interest_paid = if (position.accrued_interest > 0) {
+            if (actual_repay_amount > position.accrued_interest) {
+                position.accrued_interest
+            } else {
+                actual_repay_amount
+            }
+        } else {
+            0
+        };
+        
+        // Apply repayment (first to interest, then principal)
         if (position.accrued_interest > 0) {
             let interest_payment = if (actual_repay_amount > position.accrued_interest) {
                 position.accrued_interest
@@ -796,6 +1053,9 @@ module suisynth::sui_btc {
             position.borrowed_amount = position.borrowed_amount - actual_repay_amount;
         };
         
+        // Calculate remaining debt
+        let remaining_debt = position.borrowed_amount + position.accrued_interest;
+        
         // Update last update time
         position.last_update_time = tx_context::epoch(ctx);
         
@@ -809,6 +1069,25 @@ module suisynth::sui_btc {
         
         // Update interest rates based on new utilization
         update_interest_rates(global);
+
+        let total_supplied = balance::value(&global.lending_pool.total_suibtc);
+
+        // Calculate utilization rate for the event
+        let utilization_rate = if (total_supplied == 0) {
+            0
+        } else {
+            ((global.lending_pool.total_borrowed as u128) * 10000) / (total_supplied as u128)
+        };
+
+        // Emit repay loan event
+        event::emit(RepayLoanEvent {
+            sender,
+            repay_amount: repay_amount_copy,
+            remaining_debt,
+            accrued_interest: accrued_interest_copy,
+            interest_paid,
+            utilization_rate: utilization_rate as u64
+        });
     }
 
     // Cash out gains from a leveraged position
@@ -966,8 +1245,23 @@ module suisynth::sui_btc {
         // Update global borrowed amount
         global.lending_pool.total_borrowed = global.lending_pool.total_borrowed - debt_to_reduce;
         
+        // Collect data for the event
+        let collateral_withdrawn = collateral_to_reduce;
+        let profit_btc = (cash_out_amount as u64);
+        let debt_reduced_copy = debt_to_reduce;
+        
         // Update interest rates based on new utilization
         update_interest_rates(global);
+        
+        // Emit cash out position event
+        event::emit(CashOutPositionEvent {
+            sender,
+            collateral_type: type_name,
+            percentage,
+            collateral_withdrawn,
+            profit_btc,
+            debt_reduced: debt_reduced_copy
+        });
     }
 
     // Withdraw collateral after repaying loan
@@ -1113,9 +1407,37 @@ module suisynth::sui_btc {
         let removed_collateral = balance::split(collateral_balance, input_amount);
         
         // Convert to Coin and transfer to user
+        // Collect event data before transferring
+        let amount_for_event = input_amount;
+        
+        // Calculate remaining collateral
+        let mut remaining_collateral = 0;
+        if (table::contains(&global.lending_pool.borrowers, sender)) {
+            let borrower_position = table::borrow(&global.lending_pool.borrowers, sender);
+            if (table::contains(&borrower_position.collateral, type_name)) {
+                remaining_collateral = *table::borrow(&borrower_position.collateral, type_name);
+            }
+        };
+        
+        // Calculate remaining debt
+        let mut remaining_debt = 0;
+        if (table::contains(&global.lending_pool.borrowers, sender)) {
+            let borrower_position = table::borrow(&global.lending_pool.borrowers, sender);
+            remaining_debt = borrower_position.borrowed_amount + borrower_position.accrued_interest;
+        };
+        
+        // Transfer collateral back to user
         let collateral_coin = coin::from_balance(removed_collateral, ctx);
         transfer::public_transfer(collateral_coin, sender);
          
+        // Emit withdraw collateral event
+        event::emit(WithdrawCollateralEvent {
+            sender,
+            collateral_type: type_name,
+            amount: amount_for_event,
+            remaining_collateral,
+            remaining_debt
+        });
      }
 
     // Liquidate an undercollateralized leveraged position
@@ -1285,8 +1607,21 @@ module suisynth::sui_btc {
         // Update global borrowed amount
         global.lending_pool.total_borrowed = global.lending_pool.total_borrowed - actual_liquidation;
 
+        // Store event data
+        let collateral_seized = collateral_to_seize;
+        let debt_repaid = actual_liquidation;
+   
         // Update interest rates based on new utilization
         update_interest_rates(global);
+
+        // Emit liquidate leveraged position event
+        event::emit(LiquidateLeveragedPositionEvent {
+            borrower,
+            liquidator,
+            collateral_type: type_name,
+            collateral_seized,
+            debt_repaid
+        });
     }
 
     // ======== Public Functions =========
@@ -1447,12 +1782,32 @@ module suisynth::sui_btc {
         assert!(!bag::contains(&global.collateral_pools, type_name), ERR_ALREADY_CREATED);
         
         // Add the new collateral pool to the global state
-        bag::add(&mut global.collateral_pools, type_name, collateral_pool); 
+        bag::add(&mut global.collateral_pools, type_name, collateral_pool);
+
+        // Emit collateral pool created event
+        event::emit(CollateralPoolCreatedEvent {
+            collateral_type: type_name,
+            min_c_ratio,
+            liq_threshold,
+            liq_penalty,
+            mint_fee,
+            burn_fee,
+            price
+        }); 
     }
 
     // Update BTC price oracle manually
     public entry fun update_btc_price_manual(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap, new_price: u64) { 
+        let old_price = global.btc_price_oracle;
         global.btc_price_oracle = new_price;
+
+        // Emit update price event
+        event::emit(UpdatePriceEvent {
+            price_type: string::utf8(b"BTC"),
+            asset_type: get<SUI_BTC>(),
+            old_price,
+            new_price
+        });
     }
  
     // Update BTC price with Switchboard Oracle
@@ -1462,13 +1817,32 @@ module suisynth::sui_btc {
         let current_result = aggregator.current_result(); 
         let result_u128: u128 = current_result.result().value();               // Result as u128
 
-        global.btc_price_oracle = ((result_u128 / 100000000000000) as u64)
+        let old_price = global.btc_price_oracle;
+        let new_price = ((result_u128 / 100000000000000) as u64);
+        global.btc_price_oracle = new_price;
+
+        // Emit update price event
+        event::emit(UpdatePriceEvent {
+            price_type: string::utf8(b"BTC"),
+            asset_type: get<SUI_BTC>(),
+            old_price,
+            new_price
+        });
     }
 
     // Update collateral asset price 
     public entry fun update_collateral_price_manual<X>(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap,  new_price: u64) {
         let pool = get_mut_collateral_pool<X>(global);
+        let old_price = pool.price_oracle;
         pool.price_oracle = new_price;
+
+        // Emit update price event
+        event::emit(UpdatePriceEvent {
+            price_type: string::utf8(b"Collateral"),
+            asset_type: get<X>(),
+            old_price,
+            new_price
+        });
     }
 
     // Update collateral asset price with Switchboard Oracle
@@ -1481,7 +1855,17 @@ module suisynth::sui_btc {
         // Access various result properties 
         let result_u128: u128 = current_result.result().value();               // Result as u128
 
-        pool.price_oracle = ((result_u128 / 100000000000000) as u64)
+        let old_price = pool.price_oracle;
+        let new_price = ((result_u128 / 100000000000000) as u64);
+        pool.price_oracle = new_price;
+
+        // Emit update price event
+        event::emit(UpdatePriceEvent {
+            price_type: string::utf8(b"Collateral"),
+            asset_type: get<X>(),
+            old_price,
+            new_price
+        });
     }
 
     // Update global protocol parameters
@@ -1553,6 +1937,19 @@ module suisynth::sui_btc {
             transfer::public_transfer(treasury_coin, treasury_address);
         };
 
+        // Emit distribute fee event
+        let staker_address_copy = staker_address;
+        let treasury_address_copy = treasury_address;
+        let staker_amount_copy = staker_amount;
+        let treasury_amount_copy = treasury_amount;
+        
+        event::emit(DistributeFeeEvent {
+            staker_address: staker_address_copy,
+            treasury_address: treasury_address_copy,
+            staker_amount: staker_amount_copy,
+            treasury_amount: treasury_amount_copy,
+            total_fees
+        });
     }
 
     // ======== Internal Functions =========
