@@ -22,6 +22,7 @@ import WalletPanel from '../Wallet';
 import { AccountContext } from '@/hooks/useAccount';
 import useMarket from '@/hooks/useMarket';
 import { useWallet } from '@suiet/wallet-kit'
+import PriceChart from "./PriceChart"
 
 const TradeContainer = () => {
 
@@ -179,100 +180,40 @@ const TradeContainer = () => {
         <h1 className="text-3xl font-bold mb-8">Trade</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Market Info - Left Column */}
-          <div className="space-y-6">
-            {/* Asset Card */}
+
+
+          {/* Trade Panel - Left Column */}
+          <div className="lg:col-span-2">
+
             <motion.div
-              className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
-                  <Bitcoin className="text-orange-500" size={20} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">suiBTC</h3>
-                  <div className="flex items-center text-sm">
-                    <span className="text-slate-400 mr-2">Price:</span>
-                    <span className="font-mono">${poolData?.prices?.BTC.toLocaleString()}</span>
-                    <span className={`ml-2 ${marketData.suiBTC.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {marketData.suiBTC.change24h >= 0 ? '+' : ''}{0}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-6">
-                <div className="bg-slate-700/50 rounded-lg p-3">
-                  <div className="text-xs text-slate-400 mb-1">Available Liquidity</div>
-                  <div className="font-semibold">{Number(poolData ? (poolData.lendingPool.totalSupplied - poolData.lendingPool.totalBorrowed) : 0).toLocaleString()} suiBTC</div>
-                </div>
-
-                <div className="bg-slate-700/50 rounded-lg p-3">
-                  <div className="text-xs text-slate-400 mb-1">Borrow APR</div>
-                  <div className="font-semibold text-yellow-400">
-                    {Number(poolData?.lendingPool?.borrowRate || 0).toFixed(2)} %
-                  </div>
-                </div>
-
-                <div className="bg-slate-700/50 rounded-lg p-3">
-                  <div className="text-xs text-slate-400 mb-1">Total Borrowed</div>
-                  <div className="font-semibold">{Number(poolData?.lendingPool?.totalBorrowed || 0).toLocaleString()} suiBTC</div>
-                </div>
-
-                <div className="bg-slate-700/50 rounded-lg p-3">
-                  <div className="text-xs text-slate-400 mb-1">Max Leverage</div>
-                  <div className="font-semibold">{marketData.suiBTC.maxLeverage}x</div>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <div className="flex justify-between text-sm text-slate-400 mb-2">
-                  <span>Utilization</span>
-                  <span>{utilizationRate.toFixed(2)}%</span>
-                </div>
-                <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-green-500 to-yellow-500 rounded-full"
-                    style={{ width: `${utilizationRate}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-slate-500">0%</span>
-                  <span className="text-slate-500">100%</span>
-                </div>
-              </div>
-
-
+              <PriceChart poolData={poolData} />
             </motion.div>
 
-            {/* Wallet */}
-            <WalletPanel />
-          </div>
+            <div className="p-4 mt-6 bg-green-500/10 border border-green-500/20 rounded-lg mb-6">
+              <div className="flex items-start gap-3">
+                <Info size={20} className="text-green-400 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-green-400">Borrow from Lending Pool</h4>
+                  <p className="text-slate-300 text-sm mt-1">
+                    Open a leveraged long position on suiBTC by borrowing—no funding rates, no liquid order books.
+                  </p>
+                </div>
+              </div>
+            </div>
 
-          {/* Trade Panel - Right Column */}
-          <div className="lg:col-span-2">
             <motion.div
-              className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6"
+              className="bg-slate-800/50 mt-6 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.2 }}
             >
               <h2 className="text-xl font-bold mb-6">Leverage Trading</h2>
 
-              <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg mb-6">
-                <div className="flex items-start gap-3">
-                  <Info size={20} className="text-green-400 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-green-400">Borrow from Lending Pool</h4>
-                    <p className="text-slate-300 text-sm mt-1">
-                      Open a leveraged long position on suiBTC by providing collateral and borrowing synthetic assets directly—no funding rates, no liquid order books.
-                    </p>
-                  </div>
-                </div>
-              </div>
+
 
               {/* Trade form */}
               <div className="space-y-6">
@@ -650,6 +591,83 @@ const TradeContainer = () => {
               )}
             </motion.div>
           </div>
+
+          <div className="space-y-6">
+
+
+
+            {/* Asset Card */}
+            <motion.div
+              className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {/* <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                  <Bitcoin className="text-orange-500" size={20} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">suiBTC</h3>
+                  <div className="flex items-center text-sm">
+                    <span className="text-slate-400 mr-2">Price:</span>
+                    <span className="font-mono">${poolData?.prices?.BTC.toLocaleString()}</span>
+                    <span className={`ml-2 ${marketData.suiBTC.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {marketData.suiBTC.change24h >= 0 ? '+' : ''}{0}%
+                    </span>
+                  </div>
+                </div>
+              </div>*/}
+              <h3 className="font-semibold">Pool Information</h3>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="bg-slate-700/50 rounded-lg p-3">
+                  <div className="text-xs text-slate-400 mb-1">Available Liquidity</div>
+                  <div className="font-semibold">{Number(poolData ? (poolData.lendingPool.totalSupplied - poolData.lendingPool.totalBorrowed) : 0).toLocaleString()} suiBTC</div>
+                </div>
+
+                <div className="bg-slate-700/50 rounded-lg p-3">
+                  <div className="text-xs text-slate-400 mb-1">Borrow APR</div>
+                  <div className="font-semibold text-yellow-400">
+                    {Number(poolData?.lendingPool?.borrowRate || 0).toFixed(2)} %
+                  </div>
+                </div>
+
+                <div className="bg-slate-700/50 rounded-lg p-3">
+                  <div className="text-xs text-slate-400 mb-1">Total Borrowed</div>
+                  <div className="font-semibold">{Number(poolData?.lendingPool?.totalBorrowed || 0).toLocaleString()} suiBTC</div>
+                </div>
+
+                <div className="bg-slate-700/50 rounded-lg p-3">
+                  <div className="text-xs text-slate-400 mb-1">Max Leverage</div>
+                  <div className="font-semibold">{marketData.suiBTC.maxLeverage}x</div>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <div className="flex justify-between text-sm text-slate-400 mb-2">
+                  <span>Utilization</span>
+                  <span>{utilizationRate.toFixed(2)}%</span>
+                </div>
+                <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-green-500 to-yellow-500 rounded-full"
+                    style={{ width: `${utilizationRate}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs mt-1">
+                  <span className="text-slate-500">0%</span>
+                  <span className="text-slate-500">100%</span>
+                </div>
+              </div>
+
+
+            </motion.div>
+
+            {/* Wallet */}
+            <WalletPanel />
+          </div>
+
         </div>
       </div>
 

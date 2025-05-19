@@ -31,18 +31,24 @@ const Header = () => {
                 </Link>
             </div>
 
-            <div className="hidden md:flex space-x-[70px] text-gray-300">
+            <div className="hidden md:flex space-x-20 text-gray-300">
                 {/* <Link href="/dashboard" className={`hover:text-white transition-colors ${pathname === "/dashboard" && "text-white"}`}>
                     Dashboard
                 </Link> */}
-                <Link href="/" className={`hover:text-white transition-colors ${pathname === "/" && "text-white"}`}>
+                {/* <Link href="/" className={`hover:text-white transition-colors ${pathname === "/" && "text-white"}`}>
                     Home
-                </Link>
+                </Link>*/}
                 <Link href="/trade" className={`hover:text-white transition-colors ${pathname === "/trade" && "text-white"}`}>
                     Trade
                 </Link>
                 <Link href="/markets" className={`hover:text-white transition-colors ${pathname === "/markets" && "text-white"}`}>
                     Markets
+                </Link>
+                <Link href="/rewards" className={`hover:text-white transition-colors ${pathname === "/rewards" && "text-white"}`}>
+                    Rewards
+                </Link>
+                <Link href="/governance" className={`hover:text-white transition-colors ${pathname === "/governance" && "text-white"}`}>
+                    Governance
                 </Link>
             </div>
 
