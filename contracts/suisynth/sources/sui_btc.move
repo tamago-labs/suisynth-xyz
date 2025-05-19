@@ -59,6 +59,85 @@ module suisynth::sui_btc {
     const ERR_NO_PROFIT: u64 = 19;
     const ERR_INSUFFICIENT_LIQUIDITY: u64 = 20;
 
+    
+
+    // ======== Structs =========
+
+    // synth assets represents BTC
+    public struct SUI_BTC has drop {}
+
+    public struct CollateralPool<phantom X> has store {
+        global: ID,
+        total_collateral: Balance<X>, // Total collateral deposited (in token X)
+        total_debt: u64, // Total suiBTC minted against this collateral pool
+        min_collateral_ratio: u64, // Minimum collateral ratio required (e.g., 150%)
+        liquidation_threshold: u64, // Liquidation threshold (e.g., 120%)
+        liquidation_penalty: u64, // Liquidation penalty (e.g., 10%)
+        mint_fee: u64, // Fee for minting suiBTC (e.g., 0.25%)
+        burn_fee: u64, // Fee for burning suiBTC (e.g., 0.25%)
+        price_oracle: u64, // Price feed for this collateral asset against USD
+        positions: Table<address, Position>, // Map of user addresses to their positions
+    }
+
+    // User position in the collateral pool
+    public struct Position has store {
+        collateral_amount: u64, // Amount of collateral deposited
+        debt_amount: u64,// Amount of suiBTC minted
+        last_collateral_ratio: u64, // User's collateral ratio at the time of last action
+        last_update_time: u64 // Timestamp of last update
+    }
+
+    // Lending pool for suiBTC 
+    public struct LendingPool has store { 
+        total_suibtc: Balance<SUI_BTC>, // Total suiBTC in the pool 
+        total_borrowed: u64, // Total suiBTC borrowed from the pool 
+        borrow_rate: u64, // Borrow interest rate  
+        supply_rate: u64, // Supply interest rate  
+        max_leverage: u64, // Maximum leverage allowed (e.g., 4x = 40000) 
+        optimal_utilization: u64, // Utilization rate threshold for optimal interest 
+        suppliers: Table<address, SupplyPosition>,// Map of suppliers and their deposits 
+        borrowers: Table<address, BorrowPosition>,// Map of borrowers and their loans
+        borrower_list: vector<address>,
+        last_accrual_time: u64, // Last interest accrual timestamp
+        collaterals: Bag,
+        base_rate: u64,
+        multiplier_1: u64,
+        multiplier_2: u64
+    }
+    
+    // Supply position in the lending pool
+    public struct SupplyPosition has store { 
+        supplied_amount: u64, // Amount of suiBTC supplied 
+        accrued_interest: u64,// Interest accrued but not claimed 
+        last_update_time: u64 // Last update timestamp
+    }
+
+    // Borrow position in the lending pool
+    public struct BorrowPosition has store { 
+        borrowed_amount: u64, // Amount of suiBTC borrowed 
+        collateral: Table<TypeName, u64>,// Collateral provided (by type) 
+        accrued_interest: u64,// Interest accrued but not repaid 
+        leverage: u64, // Current leverage ratio 
+        entry_btc_price: u64, // BTC price at position entry
+        entry_collateral_price: u64, // Collateral price at position entry
+        last_update_time: u64 // Last update timestamp
+    }
+
+    public struct SuiBTCGlobal has key {
+        id: UID,
+        collateral_pools: Bag, // Collection of different collateral pools (SUI, USDC, etc.)
+        syth_supply: Supply<SUI_BTC>, // Supply of synthetic tokens (suiBTC)
+        // min_liquidity: Balance<SUI_BTC>,
+        fee_pool: Balance<SUI_BTC>, // Global protocol fee collected in suiBTC
+        btc_price_oracle: u64, // Oracle price 
+        has_paused: bool, // Paused state for emergencies
+        global_min_c_ratio: u64, // Global minimum collateral ratio across all pools (e.g., 120%)
+        global_liquidation_threshold: u64, // Global liquidation threshold (e.g., 110%) 
+        fee_to_stakers_percentage: u64, // Fee distribution: percentage to stakers (e.g., 80%)
+        fee_to_treasury_percentage: u64, // Fee distribution: percentage to treasury (e.g., 20%)
+        lending_pool: LendingPool // Lending pool with leverages
+    }
+
     // ======== Events =========
 
     // Events for synthetic asset minting and burning
@@ -184,80 +263,6 @@ module suisynth::sui_btc {
         total_fees: u64
     }
 
-    // ======== Structs =========
-
-    // synth assets represents BTC
-    public struct SUI_BTC has drop {}
-
-    public struct CollateralPool<phantom X> has store {
-        global: ID,
-        total_collateral: Balance<X>, // Total collateral deposited (in token X)
-        total_debt: u64, // Total suiBTC minted against this collateral pool
-        min_collateral_ratio: u64, // Minimum collateral ratio required (e.g., 150%)
-        liquidation_threshold: u64, // Liquidation threshold (e.g., 120%)
-        liquidation_penalty: u64, // Liquidation penalty (e.g., 10%)
-        mint_fee: u64, // Fee for minting suiBTC (e.g., 0.25%)
-        burn_fee: u64, // Fee for burning suiBTC (e.g., 0.25%)
-        price_oracle: u64, // Price feed for this collateral asset against USD
-        positions: Table<address, Position>, // Map of user addresses to their positions
-    }
-
-    // User position in the collateral pool
-    public struct Position has store {
-        collateral_amount: u64, // Amount of collateral deposited
-        debt_amount: u64,// Amount of suiBTC minted
-        last_collateral_ratio: u64, // User's collateral ratio at the time of last action
-        last_update_time: u64 // Timestamp of last update
-    }
-
-    // Lending pool for suiBTC 
-    public struct LendingPool has store { 
-        total_suibtc: Balance<SUI_BTC>, // Total suiBTC in the pool 
-        total_borrowed: u64, // Total suiBTC borrowed from the pool 
-        borrow_rate: u64, // Borrow interest rate  
-        supply_rate: u64, // Supply interest rate  
-        max_leverage: u64, // Maximum leverage allowed (e.g., 4x = 40000) 
-        optimal_utilization: u64, // Utilization rate threshold for optimal interest 
-        suppliers: Table<address, SupplyPosition>,// Map of suppliers and their deposits 
-        borrowers: Table<address, BorrowPosition>,// Map of borrowers and their loans
-        borrower_list: vector<address>,
-        last_accrual_time: u64, // Last interest accrual timestamp
-        collaterals: Bag
-    }
-    
-    // Supply position in the lending pool
-    public struct SupplyPosition has store { 
-        supplied_amount: u64, // Amount of suiBTC supplied 
-        accrued_interest: u64,// Interest accrued but not claimed 
-        last_update_time: u64 // Last update timestamp
-    }
-
-    // Borrow position in the lending pool
-    public struct BorrowPosition has store { 
-        borrowed_amount: u64, // Amount of suiBTC borrowed 
-        collateral: Table<TypeName, u64>,// Collateral provided (by type) 
-        accrued_interest: u64,// Interest accrued but not repaid 
-        leverage: u64, // Current leverage ratio 
-        entry_btc_price: u64, // BTC price at position entry
-        entry_collateral_price: u64, // Collateral price at position entry
-        last_update_time: u64 // Last update timestamp
-    }
-
-    public struct SuiBTCGlobal has key {
-        id: UID,
-        collateral_pools: Bag, // Collection of different collateral pools (SUI, USDC, etc.)
-        syth_supply: Supply<SUI_BTC>, // Supply of synthetic tokens (suiBTC)
-        // min_liquidity: Balance<SUI_BTC>,
-        fee_pool: Balance<SUI_BTC>, // Global protocol fee collected in suiBTC
-        btc_price_oracle: u64, // Oracle price 
-        has_paused: bool, // Paused state for emergencies
-        global_min_c_ratio: u64, // Global minimum collateral ratio across all pools (e.g., 120%)
-        global_liquidation_threshold: u64, // Global liquidation threshold (e.g., 110%) 
-        fee_to_stakers_percentage: u64, // Fee distribution: percentage to stakers (e.g., 80%)
-        fee_to_treasury_percentage: u64, // Fee distribution: percentage to treasury (e.g., 20%)
-        lending_pool: LendingPool // Lending pool with leverages
-    }
-
     // Using ManagerCap for admin permission
     public struct ManagerCap has key {
         id: UID
@@ -300,7 +305,10 @@ module suisynth::sui_btc {
                 borrowers,
                 borrower_list: vector::empty<address>(),
                 last_accrual_time: tx_context::epoch_timestamp_ms(ctx),
-                collaterals: bag::new(ctx)
+                collaterals: bag::new(ctx),
+                base_rate: 200, // 2% base rate
+                multiplier_1: 800, // 8% increase per 100% utilization below optimal
+                multiplier_2: 3000 // 30% increase per 100% utilization above optimal
             }
         })
     
@@ -1887,10 +1895,13 @@ module suisynth::sui_btc {
     }
 
     // Update lending pool parameters 
-    public entry fun update_lending_pool_params(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap, borrow_rate: u64, supply_rate: u64, max_leverage: u64) { 
+    public entry fun update_lending_pool_params(global: &mut SuiBTCGlobal, _manager_cap: &ManagerCap, borrow_rate: u64, supply_rate: u64, max_leverage: u64, base_rate: u64, multiplier_1: u64, multiplier_2: u64) { 
         global.lending_pool.borrow_rate = borrow_rate;
         global.lending_pool.supply_rate = supply_rate;
         global.lending_pool.max_leverage = max_leverage;
+        global.lending_pool.base_rate = base_rate;
+        global.lending_pool.multiplier_1 = multiplier_1;
+        global.lending_pool.multiplier_2 = multiplier_2;
     }
 
     // Pause/unpause the protocol
@@ -2046,14 +2057,11 @@ module suisynth::sui_btc {
         // - Below optimal: borrow_rate = base_rate + utilization_rate * multiplier_1
         // - Above optimal: borrow_rate = base_rate + optimal_rate + (utilization_rate - optimal) * multiplier_2
         
-        let base_rate = 200; // 2% base rate
-        let multiplier_1 = 800; // 8% increase per 100% utilization below optimal
-        let multiplier_2 = 3000; // 30% increase per 100% utilization above optimal
         
         global.lending_pool.borrow_rate = if (utilization_rate <= global.lending_pool.optimal_utilization) {
-            base_rate + ((utilization_rate * multiplier_1) / global.lending_pool.optimal_utilization)
+            global.lending_pool.base_rate + ((utilization_rate * global.lending_pool.multiplier_1) / global.lending_pool.optimal_utilization)
         } else {
-            base_rate + multiplier_1 + (((utilization_rate - global.lending_pool.optimal_utilization) * multiplier_2) / (10000 - global.lending_pool.optimal_utilization))
+            global.lending_pool.base_rate + global.lending_pool.multiplier_1 + (((utilization_rate - global.lending_pool.optimal_utilization) * global.lending_pool.multiplier_2) / (10000 - global.lending_pool.optimal_utilization))
         };
         
         // Update supply rate based on borrow rate and utilization
