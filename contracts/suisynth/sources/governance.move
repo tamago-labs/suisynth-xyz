@@ -163,7 +163,8 @@ module suisynth::governance {
             treasury,
             rewards_pool,
             staking_pool,
-            base_reward_rate: 100_000_000, // 0.1 tokens per day per unit (adjust as needed)
+            // base_reward_rate: 100_000_000, // 0.1 tokens per day per unit (adjust as needed)
+            base_reward_rate: 100_000000000, // Use 100 tokens per day
             emission_start_time: current_time,
             emission_end_time: current_time + (365 * 24 * 60 * 60 * 1000), // 1 year in milliseconds
             last_emission_update: current_time,
@@ -383,21 +384,16 @@ module suisynth::governance {
             return 0
         };
         
-        // Calculate time elapsed since last calculation
-        let time_elapsed = current_time - supplier_info.last_reward_calculation;
+        // Calculate time elapsed in seconds
+        let time_elapsed = (current_time - supplier_info.last_reward_calculation) / 1000;
         if (time_elapsed == 0) {
             return 0
         };
         
-        // Calculate rewards based on time elapsed, supplied amount, and reward rate
-        // Convert time to days (86400000 ms in a day)
-        let time_in_days = (time_elapsed as u128) * 1000000 / 86400000;
-        
-        // Calculate base rewards: supplied_amount * reward_rate * time_in_days
-        let reward_amount = (supplier_info.supplied_amount as u128) * 
-                           (governance.base_reward_rate as u128) * 
-                           time_in_days / 1000000000;
-        
+        // Calculate new rewards 
+        let rewards_per_token = ((time_elapsed as u128) * (governance.base_reward_rate as u128)) / 10000;
+        let reward_amount = ( rewards_per_token * (supplier_info.supplied_amount as u128)) / 1000000000  ;
+
         (reward_amount as u64)
     }
     
