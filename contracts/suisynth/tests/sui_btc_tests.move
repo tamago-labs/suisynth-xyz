@@ -1,14 +1,15 @@
- 
-#[test_only]
-module suisynth::sui_btc_tests;
 
-use sui::test_scenario::{Self, Scenario, next_tx, ctx};
+#[test_only]
+module suisynth::sui_btc_tests {
+
+use sui::test_scenario::{Self, Scenario, next_tx, later_epoch, ctx};
 use sui::coin::{Self, Coin, mint_for_testing};
 use sui::sui::SUI;
 use sui::transfer;
 use sui::test_utils::assert_eq;
 
 use suisynth::sui_btc::{Self, SuiBTCGlobal, ManagerCap, SUI_BTC};
+use suisynth::governance::{Self, GovernanceGlobal, GOVERNANCE};
 
 // Test accounts
 const ADMIN: address = @0x1234;
@@ -26,7 +27,6 @@ const MINT_FEE: u64 = 25;          // 0.25%
 const BURN_FEE: u64 = 25;          // 0.25%
 
 // test coins
-
 public struct USDC {}
 
 // Setup function to initialize the protocol
@@ -34,6 +34,7 @@ fun setup_test(): Scenario {
     let mut scenario = test_scenario::begin(ADMIN);
     {
         sui_btc::test_init(ctx(&mut scenario));
+        governance::test_init(ctx(&mut scenario));
     };
     scenario
 }
@@ -69,6 +70,7 @@ fun test_pool_creation() {
     
     test_scenario::end(scenario);
 }
+
 
 #[test]
 fun test_mint_suibtc() {
@@ -122,7 +124,7 @@ fun test_mint_suibtc() {
     {
         let sui_btc_coin = test_scenario::take_from_address<Coin<SUI_BTC>>(&scenario, USER);
         // 0.000111111 BTC 
-        assert!( coin::value(&sui_btc_coin) == 111111, 3 );
+        assert!(coin::value(&sui_btc_coin) == 111111, 3);
     
         test_scenario::return_to_address(USER, sui_btc_coin);
     };
@@ -201,7 +203,7 @@ fun test_burn_suibtc() {
     {
         let sui_coin = test_scenario::take_from_address<Coin<SUI>>(&scenario, USER);
         // 0.000050000 BTC 
-        assert!( coin::value(&sui_coin) == 50000, 3 );  
+        assert!(coin::value(&sui_coin) == 50000, 3);  
         test_scenario::return_to_address(USER, sui_coin);
     };
     
@@ -216,6 +218,7 @@ fun test_leverage_position_and_cash_out_profits() {
     next_tx(&mut scenario, ADMIN);
     {
         let mut global = test_scenario::take_shared<SuiBTCGlobal>(&scenario);
+        let mut governance_global = test_scenario::take_shared<GovernanceGlobal>(&scenario);
         let mut cap = test_scenario::take_from_address<ManagerCap>(&scenario, ADMIN);
         
         sui_btc::create_collateral_pool<SUI>(
@@ -246,11 +249,13 @@ fun test_leverage_position_and_cash_out_profits() {
         let seed_coin = mint_for_testing<SUI_BTC>(1_000000000, ctx(&mut scenario));
         sui_btc::supply_suibtc(
             &mut global,
+            &mut governance_global,
             seed_coin,
             ctx(&mut scenario)
         );
 
         test_scenario::return_shared(global);
+        test_scenario::return_shared(governance_global);
         test_scenario::return_to_address(ADMIN, cap);
     };
     
@@ -294,9 +299,9 @@ fun test_leverage_position_and_cash_out_profits() {
         let collateral_coin = test_scenario::take_from_address<Coin<USDC>>(&scenario, USER);
         let profit_coin = test_scenario::take_from_address<Coin<SUI_BTC>>(&scenario, USER);
         // 5 USDC
-        assert!( coin::value(&collateral_coin) == 5000000000, 1 );  
+        assert!(coin::value(&collateral_coin) == 5000000000, 1);  
         // 0.000041666 BTC 
-        assert!( coin::value(&profit_coin) == 41666, 2);
+        assert!(coin::value(&profit_coin) == 41666, 2);
         test_scenario::return_to_address(USER, collateral_coin);
         test_scenario::return_to_address(USER, profit_coin);
     };
@@ -312,6 +317,7 @@ fun test_repay_loan() {
     next_tx(&mut scenario, ADMIN);
     {
         let mut global = test_scenario::take_shared<SuiBTCGlobal>(&scenario);
+        let mut governance_global = test_scenario::take_shared<GovernanceGlobal>(&scenario);
         let mut cap = test_scenario::take_from_address<ManagerCap>(&scenario, ADMIN);
         
         sui_btc::create_collateral_pool<SUI>(
@@ -342,11 +348,13 @@ fun test_repay_loan() {
         let seed_coin = mint_for_testing<SUI_BTC>(100_000_000_000, ctx(&mut scenario));
         sui_btc::supply_suibtc(
             &mut global,
+            &mut governance_global,
             seed_coin,
             ctx(&mut scenario)
         );
         
         test_scenario::return_shared(global);
+        test_scenario::return_shared(governance_global);
         test_scenario::return_to_address(ADMIN, cap);
     };
     
@@ -385,6 +393,7 @@ fun test_liquidation() {
     next_tx(&mut scenario, ADMIN);
     {
         let mut global = test_scenario::take_shared<SuiBTCGlobal>(&scenario);
+        let mut governance_global = test_scenario::take_shared<GovernanceGlobal>(&scenario);
         let mut cap = test_scenario::take_from_address<ManagerCap>(&scenario, ADMIN);
         
         sui_btc::create_collateral_pool<SUI>(
@@ -403,12 +412,14 @@ fun test_liquidation() {
         let seed_coin = mint_for_testing<SUI_BTC>(100_000_000_000, ctx(&mut scenario));
          sui_btc::supply_suibtc(
             &mut global,
+            &mut governance_global,
             seed_coin,
             ctx(&mut scenario)
         );
         
         
         test_scenario::return_shared(global);
+        test_scenario::return_shared(governance_global);
         test_scenario::return_to_address(ADMIN, cap);
     };
     
@@ -432,7 +443,7 @@ fun test_liquidation() {
         let mut cap = test_scenario::take_from_address<ManagerCap>(&scenario, ADMIN);
         
         // Update SUI price (50% drop)
-        sui_btc::update_collateral_price_manual<SUI>( &mut global, &mut cap, 1_0000);
+        sui_btc::update_collateral_price_manual<SUI>(&mut global, &mut cap, 1_0000);
         
         test_scenario::return_shared(global);
         test_scenario::return_to_address(ADMIN, cap);
@@ -456,9 +467,11 @@ fun test_liquidation() {
     {
         let collateral_coin = test_scenario::take_from_address<Coin<SUI>>(&scenario, LIQUIDATOR); 
         // 10 SUI
-        assert!( coin::value(&collateral_coin) == 10_000000000, 1 );   
+        assert!(coin::value(&collateral_coin) == 10_000000000, 1);   
         test_scenario::return_to_address(LIQUIDATOR, collateral_coin); 
     };
     
     test_scenario::end(scenario);
+}
+
 }

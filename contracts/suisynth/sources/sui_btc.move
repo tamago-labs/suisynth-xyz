@@ -35,6 +35,8 @@ module suisynth::sui_btc {
 
     use switchboard::aggregator::{Aggregator, CurrentResult}; 
     use sui::event;
+    use suisynth::governance::{Self, GovernanceGlobal};
+
 
     // ======== Constants ========
 
@@ -108,8 +110,8 @@ module suisynth::sui_btc {
     // Supply position in the lending pool
     public struct SupplyPosition has store { 
         supplied_amount: u64, // Amount of suiBTC supplied 
-        accrued_interest: u64,// Interest accrued but not claimed 
-        last_update_time: u64 // Last update timestamp
+        accrued_interest: u64, // Interest accrued but not claimed 
+        last_interest_update_time: u64, // Last interest accrual timestamp
     }
 
     // Borrow position in the lending pool
@@ -126,8 +128,7 @@ module suisynth::sui_btc {
     public struct SuiBTCGlobal has key {
         id: UID,
         collateral_pools: Bag, // Collection of different collateral pools (SUI, USDC, etc.)
-        syth_supply: Supply<SUI_BTC>, // Supply of synthetic tokens (suiBTC)
-        // min_liquidity: Balance<SUI_BTC>,
+        syth_supply: Supply<SUI_BTC>, // Supply of synthetic tokens (suiBTC) 
         fee_pool: Balance<SUI_BTC>, // Global protocol fee collected in suiBTC
         btc_price_oracle: u64, // Oracle price 
         has_paused: bool, // Paused state for emergencies
@@ -135,7 +136,8 @@ module suisynth::sui_btc {
         global_liquidation_threshold: u64, // Global liquidation threshold (e.g., 110%) 
         fee_to_stakers_percentage: u64, // Fee distribution: percentage to stakers (e.g., 80%)
         fee_to_treasury_percentage: u64, // Fee distribution: percentage to treasury (e.g., 20%)
-        lending_pool: LendingPool // Lending pool with leverages
+        lending_pool: LendingPool, // Lending pool with leverages
+        governance_id: Option<ID>, // ID of governance object (optional to allow initialization)
     }
 
     // ======== Events =========
@@ -308,8 +310,9 @@ module suisynth::sui_btc {
                 collaterals: bag::new(ctx),
                 base_rate: 200, // 2% base rate
                 multiplier_1: 800, // 8% increase per 100% utilization below optimal
-                multiplier_2: 3000 // 30% increase per 100% utilization above optimal
-            }
+                multiplier_2: 3000, // 30% increase per 100% utilization above optimal
+            },
+            governance_id: option::none(), // Initially null, will be set later
         })
     
     }
@@ -706,7 +709,7 @@ module suisynth::sui_btc {
     // Supply suiBTC to the lending pool
     // User deposits suiBTC into the pool and earns interest over time
     // Updates user's supply position directly in the pool
-    public entry fun supply_suibtc(global: &mut SuiBTCGlobal, sui_btc: Coin<SUI_BTC>, ctx: &mut TxContext) { 
+    public entry fun supply_suibtc(global: &mut SuiBTCGlobal, governance: &mut GovernanceGlobal, sui_btc: Coin<SUI_BTC>, ctx: &mut TxContext) { 
         // Check that protocol is not paused
         assert!(!global.has_paused, ERR_PAUSED);
         
@@ -729,13 +732,14 @@ module suisynth::sui_btc {
             // Update existing position
             let position = table::borrow_mut(&mut global.lending_pool.suppliers, sender);
             position.supplied_amount = position.supplied_amount + sui_btc_amount;
-            position.last_update_time = tx_context::epoch(ctx);
+            position.last_interest_update_time = tx_context::epoch(ctx);
+            
         } else {
             // Create new supply position
             let new_position = SupplyPosition {
                 supplied_amount: sui_btc_amount,
                 accrued_interest: 0,
-                last_update_time: tx_context::epoch(ctx)
+                last_interest_update_time: tx_context::epoch(ctx)
             };
             table::add(&mut global.lending_pool.suppliers, sender, new_position);
         };
@@ -746,6 +750,11 @@ module suisynth::sui_btc {
         
         // Update interest rates based on new utilization
         update_interest_rates(global);
+
+        // Register/update supplier in governance if linked
+        if (option::is_some(&global.governance_id) && object::id(governance) == *option::borrow(&global.governance_id)) {
+            governance::register_supplier(governance,  total_supplied , ctx);
+        };
 
         // Calculate utilization rate for the event
         let utilization_rate = if (total_supplied == 0) {
@@ -769,6 +778,7 @@ module suisynth::sui_btc {
     // Checks that withdrawal doesn't break minimum utilization requirements
     public entry fun withdraw_suibtc(
         global: &mut SuiBTCGlobal, 
+        governance: &mut GovernanceGlobal,
         amount: u64, 
         ctx: &mut TxContext
     ) {
@@ -799,11 +809,11 @@ module suisynth::sui_btc {
         
         // Update user's supply position
         position.supplied_amount = position.supplied_amount - amount;
-        position.last_update_time = tx_context::epoch(ctx);
-        
+        position.last_interest_update_time = tx_context::epoch(ctx);
+
         // If user's supply becomes zero, remove their position
         if (position.supplied_amount == 0) {
-            let SupplyPosition { supplied_amount: _, accrued_interest: _, last_update_time: _ } = 
+            let SupplyPosition { supplied_amount: _, accrued_interest: _, last_interest_update_time: _ } = 
                 table::remove(&mut global.lending_pool.suppliers, sender);
         };
         
@@ -826,6 +836,12 @@ module suisynth::sui_btc {
         // Update interest rates based on new utilization
         update_interest_rates(global);
 
+        // Update supplier in governance if linked
+        if (option::is_some(&global.governance_id) && 
+            object::id(governance) == *option::borrow(&global.governance_id)) {
+            governance::update_supplier_amount(governance, sender, remaining_supplied, ctx);
+        };
+
         // Calculate utilization rate for the event
         let utilization_rate = if (total_supplied == 0) {
             0
@@ -841,6 +857,23 @@ module suisynth::sui_btc {
             supply_rate: pre_update_supply_rate,
             utilization_rate: utilization_rate as u64
         });
+    }
+
+    // Add a helper function to claim governance rewards
+    public entry fun claim_governance_rewards(
+        global: &SuiBTCGlobal,
+        governance: &mut GovernanceGlobal,
+        ctx: &mut TxContext
+    ) {
+        // Check that protocol is not paused
+        assert!(!global.has_paused, ERR_PAUSED);
+        
+        // Check that governance is linked
+        assert!(option::is_some(&global.governance_id), ERR_POOL_NOT_REGISTER);
+        assert!(object::id(governance) == *option::borrow(&global.governance_id), ERR_INVALID_VALUE);
+        
+        // Call the governance claim function
+        governance::claim_governance_rewards(governance, ctx);
     }
 
     // Borrow suiBTC with leverage
@@ -1963,6 +1996,23 @@ module suisynth::sui_btc {
         });
     }
 
+    // To link with governance
+    public entry fun set_governance(
+        global: &mut SuiBTCGlobal, 
+         _manager_cap: &ManagerCap,
+        governance: &GovernanceGlobal,
+        ctx: &mut TxContext
+    ) {
+        // Check that protocol is not paused
+        assert!(!global.has_paused, ERR_PAUSED);
+        
+        // Only allow setting once
+        assert!(option::is_none(&global.governance_id), ERR_ALREADY_CREATED);
+        
+        // Set the governance ID
+        global.governance_id = option::some(object::id(governance));
+    }
+
     // ======== Internal Functions =========
 
     // Accrue interest in the lending pool
@@ -2056,8 +2106,7 @@ module suisynth::sui_btc {
         // We use a simple model:
         // - Below optimal: borrow_rate = base_rate + utilization_rate * multiplier_1
         // - Above optimal: borrow_rate = base_rate + optimal_rate + (utilization_rate - optimal) * multiplier_2
-        
-        
+
         global.lending_pool.borrow_rate = if (utilization_rate <= global.lending_pool.optimal_utilization) {
             global.lending_pool.base_rate + ((utilization_rate * global.lending_pool.multiplier_1) / global.lending_pool.optimal_utilization)
         } else {

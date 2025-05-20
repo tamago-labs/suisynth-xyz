@@ -405,7 +405,7 @@ module suisynth::governance {
         
         while (i < len) {
             let supplier = *vector::borrow(&governance.supplier_list, i);
-            let info = table::borrow(&mut governance.suppliers, supplier);
+            let info = table::borrow(&governance.suppliers, supplier);
             
             let pending_rewards = calculate_supplier_rewards(governance, info, current_time);
 
