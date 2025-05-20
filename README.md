@@ -26,7 +26,7 @@ Component Name | ID/Address
 Package ID |  0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502
 suiBTC Global State | 0x1c84c83c45ccd39cbfc93743dab7a01fc5d15ef29fdcccbb021b22ad6171cc81
 Mock USDC Global State | 0x813f6b5e47d151a970e0f396fae5f3e91c8f9738270f5ed68e0ecfc0656861f4
-Mock USDC Type | 0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::USDCGlobal
+Mock USDC Type | 0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::MOCK_USDC
 ManagerCap | 0xcee5975588f2efdfcfe29d2687deb3b68f308669ae9b4d13af8cb92632ec3156
 Switchboard Sui/USD Price State | 0x905b96e0c9862ef47d6a30971ab895ffb80ed1b58a107c3433fa69be64d9ac5d 
 Switchboard BTC/USD Price State | 0xc1c608737dae8be35fb00e32bab782a933bf3d8530f7ec2dfafe6ba630a1a349 
