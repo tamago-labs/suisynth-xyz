@@ -1,4 +1,5 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import { scheduler } from "../functions/scheduler/resource"
 
 const schema = a.schema({
   CryptoPrice: a
@@ -12,7 +13,9 @@ const schema = a.schema({
       source: a.string()
     })
     .authorization((allow) => [allow.guest()]),
-});
+}).authorization((allow) => [
+  allow.resource(scheduler)
+]);
 
 export type Schema = ClientSchema<typeof schema>;
 
