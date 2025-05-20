@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-amplify/backend": "^1.14.1",
     "@aws-amplify/ui-react": "^6.5.5",
     "@mysten/sui.js": "^0.54.1",
     "@suiet/wallet-kit": "^0.3.8",
@@ -30,7 +31,6 @@
     "usehooks-ts": "^3.1.1"
   },
   "devDependencies": {
-    "@aws-amplify/backend": "1.7.0",
     "@aws-amplify/backend-cli": "1.4.2",
     "@types/node": "^20",
     "@types/react": "^18",
