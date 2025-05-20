@@ -1,6 +1,7 @@
 
 import { motion } from 'framer-motion';
 import { ArrowRight, Gem, ChevronUp, ChevronDown } from 'lucide-react';
+import Link from "next/link"
 
 const Hero = () => {
 
@@ -8,7 +9,7 @@ const Hero = () => {
   const priceData = [
     { symbol: "suiBTC", price: "$94,213", change: "+4.2%", isUp: true },
     { symbol: "suiS&P", price: "$4,782.16", change: "+2.4%", isUp: true },
-    { symbol: "suiGLD", price: "$2,341.75", change: "-0.8%", isUp: false }, 
+    { symbol: "suiGLD", price: "$2,341.75", change: "-0.8%", isUp: false },
     { symbol: "suiUSD", price: "$1.002", change: "+0.1%", isUp: true },
     { symbol: "suiCRUD", price: "$87.33", change: "-1.2%", isUp: false },
     { symbol: "suiBTC", price: "$64,213", change: "+1.8%", isUp: true },
@@ -98,14 +99,18 @@ const Hero = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <button className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-lg flex items-center gap-2 hover:shadow-lg hover:shadow-blue-500/20 transition-all">
-                Trade Now
-                <ArrowRight size={16} />
-              </button>
+              <Link href="/trade">
+                <button className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-lg flex items-center gap-2 hover:shadow-lg hover:shadow-blue-500/20 transition-all">
+                  Trade Now
+                  <ArrowRight size={16} />
+                </button>
+              </Link>
 
-              <button className="px-6 py-3 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-700 transition-all">
-                Learn More
-              </button>
+              <Link href="https://github.com/tamago-labs/suisynth-xyz" target="_blank">
+                <button className="px-6 py-3 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-700 transition-all">
+                  Learn More
+                </button>
+              </Link>
             </motion.div>
 
             {/* Featured assets row */}

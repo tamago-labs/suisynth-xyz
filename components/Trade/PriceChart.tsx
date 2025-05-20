@@ -136,7 +136,7 @@ const PriceChart = () => {
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 h-80">
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4  ">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3  ">
           <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
@@ -195,7 +195,7 @@ const PriceChart = () => {
           <RefreshCw className="animate-spin text-slate-400" size={24} />
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width="100%" height={300}>
           <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
             <XAxis

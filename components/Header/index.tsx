@@ -18,7 +18,7 @@ const Header = () => {
         <nav className="flex container mx-auto justify-between items-center mb-4">
             <div className="flex items-center">
                 <Link href="/" >
-                    <div className="ml-3 flex flex-col">
+                    <div className="ml-3 hidden md:flex flex-col">
                         <span className="text-white text-2xl font-bold">SuiSynth</span>
                         <motion.div
                             className="h-0.5 w-24 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-400 rounded-full mt-0.5"
@@ -28,10 +28,14 @@ const Header = () => {
                             transition={{ duration: 0.5, delay: 0.2 }}
                         />
                     </div>
+                    <div className="ml-1 mr-1 flex md:hidden flex-col">
+                        <span className="text-white text-sm font-bold">SuiSynth</span>
+
+                    </div>
                 </Link>
             </div>
 
-            <div className="hidden md:flex space-x-20 text-gray-300">
+            <div className="flex text-xs md:text-base space-x-2 md:space-x-20 text-gray-300">
                 {/* <Link href="/dashboard" className={`hover:text-white transition-colors ${pathname === "/dashboard" && "text-white"}`}>
                     Dashboard
                 </Link> */}
@@ -46,9 +50,6 @@ const Header = () => {
                 </Link>
                 <Link href="/rewards" className={`hover:text-white transition-colors ${pathname === "/rewards" && "text-white"}`}>
                     Rewards
-                </Link>
-                <Link href="/governance" className={`hover:text-white transition-colors ${pathname === "/governance" && "text-white"}`}>
-                    Governance
                 </Link>
             </div>
 
