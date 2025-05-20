@@ -23,13 +23,16 @@ For detailed instructions on deploying your application, refer to the [deploymen
 
 Component Name | ID/Address
 --- | --- 
-Package ID |  0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1
-suiBTC Global State | 0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8
-Mock USDC Global State | 0xa3a951b5365f5c5f64ac9ee372d8533ea48707d2bf718918c08e11e4a5b5cb33
-Mock USDC Type | 0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC
-ManagerCap | 0x76957c62721cfe583f8afce10e3cf0bdce6e869097d1af6507f713651d14fe5c
+Package ID |  0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502
+suiBTC Global State | 0x1c84c83c45ccd39cbfc93743dab7a01fc5d15ef29fdcccbb021b22ad6171cc81
+Mock USDC Global State | 0x813f6b5e47d151a970e0f396fae5f3e91c8f9738270f5ed68e0ecfc0656861f4
+Mock USDC Type | 0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::USDCGlobal
+ManagerCap | 0xcee5975588f2efdfcfe29d2687deb3b68f308669ae9b4d13af8cb92632ec3156
 Switchboard Sui/USD Price State | 0x905b96e0c9862ef47d6a30971ab895ffb80ed1b58a107c3433fa69be64d9ac5d 
 Switchboard BTC/USD Price State | 0xc1c608737dae8be35fb00e32bab782a933bf3d8530f7ec2dfafe6ba630a1a349 
+Governance Global State | 0x1ee2d2dfc5ab195ec948a2a1422fdf86866954fd70853b4b4b16d593bbd8d048
+GovernanceCap | 0x79ff270ce77974378f4e9d6217db66ebd416f162b5820bcd1fe6301241d35b0f
+Governance Token Type | 0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::governance::GOVERNANCE
 
 ## License
 
