@@ -190,7 +190,7 @@ const TradeContainer = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <PriceChart poolData={poolData} />
+              {/* <PriceChart poolData={poolData} /> */}
             </motion.div>
 
             <div className="p-4 mt-6 bg-green-500/10 border border-green-500/20 rounded-lg mb-6">
