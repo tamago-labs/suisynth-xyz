@@ -1,10 +1,10 @@
 [
     {
         "name" : "SUI", 
-        "object_id" : "0xd9df2b2bd132825f4dac9a94fc7d7f559d4222d944435c690312e6ff9150c877"
+        "object_id" : "0xe645231a9364431b1a9247abd6b768064f2e4cbca43ef47ff67587d5a38eb062"
     },
     {
         "name" : "USDC", 
-        "object_id" : "0x155bcfc7328e535ab19690a81a3c61436f99318f42436f4e4b1bde25115fd6b5"
+        "object_id" : "0x49de4c2ae4b5fa8ac49ce06943ca88bd3f91b97eabc8e4dab03c205d5e3414d6"
     }
 ]
