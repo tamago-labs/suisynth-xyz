@@ -62,7 +62,7 @@ const AssetCard = ({ marketData, utilizationRate }: any) => {
                 <div className="bg-slate-700/50 rounded-lg p-3">
                     <div className="text-xs text-slate-400 mb-1">Supply APY</div>
                     <div className="font-semibold text-green-400">
-                        {Number(poolData?.lendingPool?.supplyRate || 0).toFixed(2)} %</div>
+                        {Number(poolData?.lendingPool?.supplyRate || 0).toFixed(2)} % + SYNTH</div>
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-3">

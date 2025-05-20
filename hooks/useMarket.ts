@@ -24,10 +24,10 @@ const useMarket = () => {
             tx.setGasBudget(50000000);
 
             tx.moveCall({
-                target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::mint`,
+                target: `0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::mint`,
                 arguments: [
                     tx.object(
-                        "0xa3a951b5365f5c5f64ac9ee372d8533ea48707d2bf718918c08e11e4a5b5cb33"
+                        "0x813f6b5e47d151a970e0f396fae5f3e91c8f9738270f5ed68e0ecfc0656861f4"
                     ),
                     tx.pure.u64(`${BigNumber(100).multipliedBy(10 ** 9)}`),
                     tx.pure.address(recipient),
@@ -65,9 +65,34 @@ const useMarket = () => {
     const listMintPositions = useCallback(
         async (address: any) => {
 
+      //       const eventsResult = await client.queryEvents({
+      //   query: {  
+      //        "MoveEventType" : "0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::sui_btc::MintEvent"
+      //    },
+      // });
+
+      //       const myEvents = eventsResult.data.filter( (item:any) => item.sender === address)
+
+      //       const result = myEvents.map((event: any) => {
+      //           return {
+      //               collateralType: event.parsedJson.collateral_type.name === "a22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::MOCK_USDC" ? "USDC" : "SUI",
+      //               collateralAmount: parseAmount(BigNumber(event.parsedJson.collateral_amount), 9),
+      //               debtAmount: parseAmount(BigNumber(event.parsedJson.suibtc_amount), 9)
+      //           }   
+      //       }).reduce((output: any, item: any) => {
+      //           if (output.find(entry => item.collateralType === entry.collateralType)) {
+      //               let entry = output.find(entry => item.collateralType === entry.collateralType)
+      //               entry.collateralAmount += item.collateralAmount
+      //               entry.debtAmount += item.debtAmount
+      //           } else {
+      //               output.push(item)
+      //           }
+      //           return output
+      //       }, [])
+
             // fetch USDC table first
             let dynamicFieldPage = await client.getDynamicFields({
-                parentId: "0x533bdd2ee04758d2039c3c6c0bd73aed09d296b8a7ac0f07ef7f300e692c8682"
+                parentId: "0x8698896b3cef2b8043420c42e4f7d7909cf714ad178276f5af3daf9cbe80538e"
             });
 
             let output = [];
@@ -99,9 +124,9 @@ const useMarket = () => {
             }
 
             // SUI
-            // "0xb666d1aef14228b3918ab15d8a235e55315a711bc9814a86b6fde9727e4c6a8a"
+            // "0x6df9c59b6657cd3657cc3bc65a9431bffec9d9e516e43d98353e300db86778c8"
             dynamicFieldPage = await client.getDynamicFields({
-                parentId: "0xb666d1aef14228b3918ab15d8a235e55315a711bc9814a86b6fde9727e4c6a8a"
+                parentId: "0x6df9c59b6657cd3657cc3bc65a9431bffec9d9e516e43d98353e300db86778c8"
             });
 
             for (let position of dynamicFieldPage.data) {
@@ -130,7 +155,7 @@ const useMarket = () => {
 
             }
 
-            return output;
+            return output
         },
         [client]
     )
@@ -139,7 +164,7 @@ const useMarket = () => {
         async (address: any) => {
 
             let dynamicFieldPage = await client.getDynamicFields({
-                parentId: "0xd2bf035565dadd174acaeb07813f69eb5ae74b99f7a4b6315b650b7dae24fce6"
+                parentId: "0x80f61ac2bbc51bb0dd9588353183a3e39e0e377e1155da9b4831eaf05231adf6"
             });
 
             let output: any = [];
@@ -171,7 +196,7 @@ const useMarket = () => {
 
             }
 
-            return output;
+            return output
         },
         [client]
     )
@@ -179,72 +204,72 @@ const useMarket = () => {
     const listActivePositions = useCallback(
         async (address: any) => {
 
-            let dynamicFieldPage = await client.getDynamicFields({
-                parentId: "0x20384479c92d559ca74b207020c1dff4d150d02b76ad17238e6eab1447ebfb7a"
-            });
+            // let dynamicFieldPage = await client.getDynamicFields({
+            //     parentId: "0x20384479c92d559ca74b207020c1dff4d150d02b76ad17238e6eab1447ebfb7a"
+            // });
 
-            let output: any = [];
+            // let output: any = [];
 
-            for (let position of dynamicFieldPage.data) {
-                const { objectId, name } = position;
+            // for (let position of dynamicFieldPage.data) {
+            //     const { objectId, name } = position;
 
-                if (name.value === address) {
-                    const result: any = await client.getObject({
-                        id: objectId,
-                        options: {
-                            showType: false,
-                            showOwner: true,
-                            showPreviousTransaction: false,
-                            showDisplay: false,
-                            showContent: true,
-                            showBcs: false,
-                            showStorageRebate: false,
-                        },
-                    });
-                    const fields = result.data.content.fields.value.fields;
+            //     if (name.value === address) {
+            //         const result: any = await client.getObject({
+            //             id: objectId,
+            //             options: {
+            //                 showType: false,
+            //                 showOwner: true,
+            //                 showPreviousTransaction: false,
+            //                 showDisplay: false,
+            //                 showContent: true,
+            //                 showBcs: false,
+            //                 showStorageRebate: false,
+            //             },
+            //         });
+            //         const fields = result.data.content.fields.value.fields;
  
-                    const tableId = fields.collateral.fields.id.id;
-                    const dynamicFieldPage = await client.getDynamicFields({
-                        parentId: tableId,
-                    });
+            //         const tableId = fields.collateral.fields.id.id;
+            //         const dynamicFieldPage = await client.getDynamicFields({
+            //             parentId: tableId,
+            //         });
 
-                    let positionInfo: any = {
-                        accruedInterest: parseAmount(BigNumber(fields?.accrued_interest), 9),
-                        borrowedAmount: parseAmount(BigNumber(fields?.borrowed_amount), 9),
-                        entryBtcPrice: parseAmount(BigNumber(fields?.entry_btc_price), 4),
-                        entryCollateralPrice: parseAmount(BigNumber(fields?.entry_collateral_price), 4),
-                        leverage: parseAmount(BigNumber(fields?.leverage), 4)
-                    }
+            //         let positionInfo: any = {
+            //             accruedInterest: parseAmount(BigNumber(fields?.accrued_interest), 9),
+            //             borrowedAmount: parseAmount(BigNumber(fields?.borrowed_amount), 9),
+            //             entryBtcPrice: parseAmount(BigNumber(fields?.entry_btc_price), 4),
+            //             entryCollateralPrice: parseAmount(BigNumber(fields?.entry_collateral_price), 4),
+            //             leverage: parseAmount(BigNumber(fields?.leverage), 4)
+            //         }
 
-                    for (let pool of dynamicFieldPage.data) {
-                        const { objectId } = pool;
-                        const result: any = await client.getObject({
-                            id: objectId,
-                            options: {
-                                showType: false,
-                                showOwner: false,
-                                showPreviousTransaction: false,
-                                showDisplay: false,
-                                showContent: true,
-                                showBcs: false,
-                                showStorageRebate: false,
-                            },
-                        });
+            //         for (let pool of dynamicFieldPage.data) {
+            //             const { objectId } = pool;
+            //             const result: any = await client.getObject({
+            //                 id: objectId,
+            //                 options: {
+            //                     showType: false,
+            //                     showOwner: false,
+            //                     showPreviousTransaction: false,
+            //                     showDisplay: false,
+            //                     showContent: true,
+            //                     showBcs: false,
+            //                     showStorageRebate: false,
+            //                 },
+            //             });
 
-                        const assetType = result.data.content.fields.name.fields.name
-                        const value = result.data.content.fields.value;
+            //             const assetType = result.data.content.fields.name.fields.name
+            //             const value = result.data.content.fields.value;
 
-                        positionInfo.collateralType = assetType === "ddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC" ? "USDC" : "SUI"
-                        positionInfo.collateralAmount = parseAmount(BigNumber(value), 9)
-                    }
+            //             positionInfo.collateralType = assetType === "ddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC" ? "USDC" : "SUI"
+            //             positionInfo.collateralAmount = parseAmount(BigNumber(value), 9)
+            //         }
 
-                    output.push(positionInfo)
+            //         output.push(positionInfo)
 
-                }
+            //     }
 
-            }
+            // }
 
-            return output;
+            return []
         },
         [client]
     )
@@ -252,7 +277,7 @@ const useMarket = () => {
     const fetchPools = useCallback(async () => {
 
         const { data } = await client.getObject({
-            id: "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8",
+            id: "0x1c84c83c45ccd39cbfc93743dab7a01fc5d15ef29fdcccbb021b22ad6171cc81",
             options: {
                 showType: false,
                 showOwner: false,
@@ -290,6 +315,7 @@ const useMarket = () => {
                     showStorageRebate: false,
                 },
             });
+
             const poolFields = poolData.data.content.fields.value.fields;
 
             // console.log("poolFields :", poolFields)
@@ -331,7 +357,7 @@ const useMarket = () => {
         // get the coin object
         const allCoins = await client.getCoins({
             owner: address,
-            coinType: collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC",
+            coinType: collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::MOCK_USDC",
         });
 
         const [mainCoin, ...restCoins] = allCoins.data;
@@ -358,15 +384,16 @@ const useMarket = () => {
         const coinObjId = collateral_asset_type === "SUI" ? tx.gas : mainCoin.coinObjectId;
 
         const [coin] = tx.splitCoins(coinObjId, [`${(BigNumber(collateral_amount).multipliedBy(10 ** 9)).toFixed(0)}`]);
+ 
 
         tx.moveCall({
-            target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::mint`,
+            target: `0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::sui_btc::mint`,
             typeArguments: [
-                collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC"
+                collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::MOCK_USDC"
             ],
             arguments: [
                 tx.object(
-                    "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8"
+                    "0x1c84c83c45ccd39cbfc93743dab7a01fc5d15ef29fdcccbb021b22ad6171cc81"
                 ),
                 coin,
                 tx.pure.u64(`${(BigNumber(mint_amount).multipliedBy(10 ** 9)).toFixed(0)}`)
@@ -406,7 +433,7 @@ const useMarket = () => {
         // get the coin object
         const allCoins = await client.getCoins({
             owner: address,
-            coinType: "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::SUI_BTC"
+            coinType: "0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::sui_btc::SUI_BTC"
         });
 
         const [mainCoin, ...restCoins] = allCoins.data;
@@ -435,13 +462,13 @@ const useMarket = () => {
         const [coin] = tx.splitCoins(coinObjId, [`${(BigNumber(sui_btc_amount).multipliedBy(10 ** 9)).toFixed(0)}`]);
 
         tx.moveCall({
-            target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::burn`,
+            target: `0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::sui_btc::burn`,
             typeArguments: [
-                collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC"
+                collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::MOCK_USDC"
             ],
             arguments: [
                 tx.object(
-                    "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8"
+                    "0x1c84c83c45ccd39cbfc93743dab7a01fc5d15ef29fdcccbb021b22ad6171cc81"
                 ),
                 coin,
                 tx.pure.u64(`${(BigNumber(collateral_amount).multipliedBy(10 ** 9)).toFixed(0)}`)
@@ -477,7 +504,7 @@ const useMarket = () => {
         // get the coin object
         const allCoins = await client.getCoins({
             owner: address,
-            coinType: "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::SUI_BTC"
+            coinType: "0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::sui_btc::SUI_BTC"
         });
 
         const [mainCoin, ...restCoins] = allCoins.data;
@@ -506,10 +533,13 @@ const useMarket = () => {
         const [coin] = tx.splitCoins(coinObjId, [`${(BigNumber(sui_btc_amount).multipliedBy(10 ** 9)).toFixed(0)}`]);
 
         tx.moveCall({
-            target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::supply_suibtc`,
+            target: `0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::sui_btc::supply_suibtc`,
             arguments: [
                 tx.object(
-                    "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8"
+                    "0x1c84c83c45ccd39cbfc93743dab7a01fc5d15ef29fdcccbb021b22ad6171cc81"
+                ),
+                tx.object(
+                    "0x1ee2d2dfc5ab195ec948a2a1422fdf86866954fd70853b4b4b16d593bbd8d048"
                 ),
                 coin
             ],
@@ -542,10 +572,10 @@ const useMarket = () => {
         tx.setGasBudget(10000000);
 
         tx.moveCall({
-            target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::withdraw_suibtc`,
+            target: `0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::sui_btc::withdraw_suibtc`,
             arguments: [
                 tx.object(
-                    "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8"
+                    "0x1c84c83c45ccd39cbfc93743dab7a01fc5d15ef29fdcccbb021b22ad6171cc81"
                 ),
                 tx.pure.u64(`${(BigNumber(sui_btc_amount).multipliedBy(10 ** 9)).toFixed(0)}`)
             ],
@@ -581,7 +611,7 @@ const useMarket = () => {
         // get the coin object
         const allCoins = await client.getCoins({
             owner: address,
-            coinType: collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC",
+            coinType: collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::MOCK_USDC",
         });
 
         const [mainCoin, ...restCoins] = allCoins.data;
@@ -610,13 +640,13 @@ const useMarket = () => {
         const [coin] = tx.splitCoins(coinObjId, [`${(BigNumber(collateral_amount).multipliedBy(10 ** 9)).toFixed(0)}`]);
 
         tx.moveCall({
-            target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::add_collateral`,
+            target: `0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::sui_btc::add_collateral`,
             typeArguments: [
-                collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC"
+                collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::MOCK_USDC"
             ],
             arguments: [
                 tx.object(
-                    "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8"
+                    "0x1c84c83c45ccd39cbfc93743dab7a01fc5d15ef29fdcccbb021b22ad6171cc81"
                 ),
                 coin
             ],
@@ -653,7 +683,7 @@ const useMarket = () => {
         // get the coin object
         const allCoins = await client.getCoins({
             owner: address,
-            coinType: collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC",
+            coinType: collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::MOCK_USDC",
         });
 
         const [mainCoin, ...restCoins] = allCoins.data;
@@ -682,13 +712,13 @@ const useMarket = () => {
         const [coin] = tx.splitCoins(coinObjId, [`${(BigNumber(collateral_amount).multipliedBy(10 ** 9)).toFixed(0)}`]);
 
         tx.moveCall({
-            target: `0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::sui_btc::borrow_with_leverage`,
+            target: `0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::sui_btc::borrow_with_leverage`,
             typeArguments: [
-                collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xddd1dc7afe3888a05835345ecd98cf9c91fffa987a4d749d92b1a879d5c5e3b1::mock_usdc::MOCK_USDC"
+                collateral_asset_type === "SUI" ? "0x2::sui::SUI" : "0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::mock_usdc::MOCK_USDC"
             ],
             arguments: [
                 tx.object(
-                    "0x036faafff10ff640957e128670696113077340441429b34e97f63b6a252659e8"
+                    "0x1c84c83c45ccd39cbfc93743dab7a01fc5d15ef29fdcccbb021b22ad6171cc81"
                 ),
                 coin,
                 tx.pure.u64(`${(BigNumber(leverage).multipliedBy(10 ** 4)).toFixed(0)}`)

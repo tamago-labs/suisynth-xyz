@@ -25,6 +25,7 @@ import { useState } from 'react';
 const MintPositions = ({ mintPositions, poolData, handleAddCollateral, handleBurn }: any) => {
 
 
+
     return (
         <>
             <h4 className="text-sm font-medium text-slate-400 mb-3">Minted Positions</h4>
