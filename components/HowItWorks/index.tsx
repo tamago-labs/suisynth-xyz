@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Coins, BarChart, ArrowRight, RefreshCcw, Download } from 'lucide-react';
+import { Wallet, Coins, BarChart, ArrowRight, RefreshCcw, Download, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 
 const HowItWorksSection = () => {
@@ -19,7 +19,7 @@ const HowItWorksSection = () => {
       delay: 0.2
     },
     {
-      icon: <Coins className="h-8 w-8" />,
+      icon: <DollarSign className="h-8 w-8" />,
       title: "Cash Out Real Profits",
       description: "Repay your borrowed suiBTC and withdraw your collateral plus any profits in real assets",
       delay: 0.3
@@ -99,7 +99,7 @@ const HowItWorksSection = () => {
         </div>
 
         {/* CTA button */}
-        <motion.div
+        {/* <motion.div
           className="mt-16 text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -111,7 +111,7 @@ const HowItWorksSection = () => {
               Learn More
             </button>
           </Link>
-        </motion.div>
+        </motion.div> */}
       </div>
     </section>
   );

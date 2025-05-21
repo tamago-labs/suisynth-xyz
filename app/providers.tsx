@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'; 
+import { Amplify } from "aws-amplify";
 
 import AOS from 'aos';
 import 'aos/dist/aos.css';
@@ -10,6 +11,11 @@ import { WalletProvider } from "@suiet/wallet-kit";
 import AccountProvider from "../hooks/useAccount"
 
 import "@suiet/wallet-kit/style.css";
+
+import outputs from "@/amplify_outputs.json";
+import "@aws-amplify/ui-react/styles.css";
+
+Amplify.configure(outputs);
 
 export function Providers({ children }: any) {
 

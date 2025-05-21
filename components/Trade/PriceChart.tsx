@@ -1,83 +1,135 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Bitcoin, RefreshCw, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { AccountContext } from '@/hooks/useAccount';
 
-const PriceChart = () => {
 
-  // console.log("pool data: ", poolData)
+const PriceChart = ({ currentPrice, setCurrentPrice }: any) => {
+  const { getBTCPrices }: any = useContext(AccountContext);
 
-  const [timeframe, setTimeframe] = useState('24h');
+  const [timeframe, setTimeframe] = useState<string>('24h');
   const [chartData, setChartData] = useState<any>([]);
-  const [loading, setLoading] = useState(true);
-  const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [showTimeframeDropdown, setShowTimeframeDropdown] = useState<boolean>(false);
 
-  // Mock data for demonstration - in production, replace with API calls
   const fetchChartData = async (selectedTimeframe: any) => {
     setLoading(true);
 
-    // Simulating API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      // Define filter parameters based on selected timeframe
+      let timeFilter = {};
+      const now = new Date();
 
-    // Generate chart data based on timeframe
-    const now = new Date();
-    let startTime;
-    let interval;
-    let dataPoints;
+      switch (selectedTimeframe) {
+        case '1h':
+          timeFilter = {
+            createdAt: {
+              gt: new Date(now.getTime() - 60 * 60 * 1000).toISOString()
+            }
+          };
+          break;
+        case '24h':
+          timeFilter = {
+            createdAt: {
+              gt: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+            }
+          };
+          break;
+        case '7d':
+          timeFilter = {
+            createdAt: {
+              gt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+            }
+          };
+          break;
+        case '30d':
+          timeFilter = {
+            createdAt: {
+              gt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+            }
+          };
+          break;
+        default:
+          timeFilter = {
+            createdAt: {
+              gt: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+            }
+          };
+      }
 
-    switch (selectedTimeframe) {
-      case '1h':
-        startTime = new Date(now.getTime() - 60 * 60 * 1000);
-        interval = 5 * 60 * 1000; // 5 minutes
-        dataPoints = 12;
-        break;
-      case '24h':
-        startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        interval = 60 * 60 * 1000; // 1 hour
-        dataPoints = 24;
-        break;
-      case '7d':
-        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        interval = 6 * 60 * 60 * 1000; // 6 hours
-        dataPoints = 28;
-        break;
-      case '30d':
-        startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        interval = 24 * 60 * 60 * 1000; // 1 day
-        dataPoints = 30;
-        break;
-      default:
-        startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        interval = 60 * 60 * 1000; // 1 hour
-        dataPoints = 24;
+      // Get filtered data from the API using the correct filter syntax
+      const data = await getBTCPrices(timeFilter);
+
+      if (!data || data.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      // Sort data by timestamp (newest to oldest)  
+      const sortedData = data.sort((a: any, b: any) => {
+        return (new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf())
+      })
+
+      // Set current price from the most recent data point
+      setCurrentPrice(parseFloat(sortedData[0].lastPrice));
+
+      // Process data based on the selected timeframe
+      let processedData: any = [];
+
+      // Filter and format data based on timeframe
+      switch (selectedTimeframe) {
+        case '1h':
+          // For 1h, we'd need more frequent data points than what's available
+          // Use the most recent data points and interpolate if needed
+          processedData = sortedData.slice(0, 12).map((item: any) => ({
+            timestamp: new Date(item.createdAt),
+            price: parseFloat(item.lastPrice),
+            time: formatTime(new Date(item.createdAt), selectedTimeframe)
+          }));
+          break;
+
+        case '24h':
+          // Use the available hourly data
+          processedData = sortedData.map((item: any) => ({
+            timestamp: new Date(item.createdAt),
+            price: parseFloat(item.lastPrice),
+            time: formatTime(new Date(item.createdAt), selectedTimeframe)
+          }));
+          break;
+
+        case '7d':
+          // For 7d, we should have more data points but we'll use what we have
+          processedData = sortedData.map((item: any) => ({
+            timestamp: new Date(item.createdAt),
+            price: parseFloat(item.lastPrice),
+            time: formatTime(new Date(item.createdAt), selectedTimeframe)
+          }));
+          break;
+
+        case '30d':
+          // For 30d, we should have more data points but we'll use what we have
+          processedData = sortedData.map((item: any) => ({
+            timestamp: new Date(item.createdAt),
+            price: parseFloat(item.lastPrice),
+            time: formatTime(new Date(item.createdAt), selectedTimeframe)
+          }));
+          break;
+
+        default:
+          processedData = sortedData.map((item: any) => ({
+            timestamp: new Date(item.createdAt),
+            price: parseFloat(item.lastPrice),
+            time: formatTime(new Date(item.createdAt), selectedTimeframe)
+          }));
+      }
+
+      // Reverse the data so it's oldest to newest for proper chart display
+      setChartData(processedData.reverse());
+    } catch (error) {
+      console.error("Error fetching price data:", error);
+    } finally {
+      setLoading(false);
     }
-
-    // Current BTC price from pool data or default to 65000
-    const currentPrice = 95000;
-
-    // Generate data with realistic price movements
-    let mockData: any = [];
-    let currentValue = currentPrice * 0.85; // Start somewhat lower than current
-
-    for (let i = 0; i < dataPoints; i++) {
-      const timestamp = new Date(startTime.getTime() + (i * interval));
-
-      // Create somewhat realistic price movements
-      // Trend generally upward to reach current price
-      const volatility = currentPrice * 0.01; // 1% volatility
-      const trendFactor = (currentPrice - currentValue) / (dataPoints - i);
-      const change = trendFactor + (Math.random() - 0.3) * volatility;
-
-      currentValue += change;
-
-      mockData.push({
-        timestamp: timestamp,
-        price: currentValue,
-        time: formatTime(timestamp, selectedTimeframe),
-      });
-    }
-
-    setChartData(mockData);
-    setLoading(false);
   };
 
   const formatTime = (date: any, timeframe: any) => {
@@ -136,9 +188,9 @@ const PriceChart = () => {
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4  ">
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3  ">
+        <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
             <Bitcoin className="text-orange-500" size={20} />
           </div>
@@ -146,21 +198,13 @@ const PriceChart = () => {
             <h3 className="text-xl font-bold">suiBTC</h3>
             <div className="flex items-center text-sm">
               <span className="text-slate-400 mr-2">Price:</span>
-              <span className="font-mono">${(95000).toLocaleString()}</span>
-              <span className={`flex items-center text-sm ${isPriceUp ? 'text-green-400' : 'text-red-400'}`}>
+              <span className="font-mono">${currentPrice.toLocaleString()}</span>
+              <span className={`ml-2 flex items-center text-sm ${isPriceUp ? 'text-green-400' : 'text-red-400'}`}>
                 {isPriceUp ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
                 {Math.abs(priceChange.percentage).toFixed(2)}%
               </span>
             </div>
           </div>
-          {/*<h3 className="text-xl font-bold">suiBTC</h3>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-2xl font-mono">${(95000).toLocaleString()}</span>
-            <span className={`flex items-center text-sm ${isPriceUp ? 'text-green-400' : 'text-red-400'}`}>
-              {isPriceUp ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
-              {Math.abs(priceChange.percentage).toFixed(2)}%
-            </span>
-          </div>*/}
         </div>
         <div className="relative">
           <button
@@ -205,7 +249,7 @@ const PriceChart = () => {
               tickLine={false}
             />
             <YAxis
-              domain={['dataMin - 1000', 'dataMax + 1000']}
+              domain={['auto', 'auto']}
               tick={{ fill: '#94a3b8', fontSize: 12 }}
               axisLine={{ stroke: '#334155' }}
               tickLine={false}
