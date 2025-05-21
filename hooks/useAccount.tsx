@@ -3,7 +3,10 @@ import { createContext, useCallback, ReactNode, useContext, useEffect, useMemo, 
 import useMarket from "./useMarket";
 import { useWallet } from "@suiet/wallet-kit";
 import { useInterval } from "./useInterval";
+import type { Schema } from "../amplify/data/resource"
+import { generateClient } from "aws-amplify/api"
 
+const client = generateClient<Schema>()
 
 type accountContextType = {
     balances: any[],
@@ -26,6 +29,8 @@ type Values = {
 }
 
 export const AccountContext = createContext<accountContextType>(accountContextDefaultValues)
+
+
 
 const Provider = ({ children }: Props) => {
 
@@ -60,8 +65,8 @@ const Provider = ({ children }: Props) => {
         dispatch({ balances: [] })
     }
 
-    useInterval(() => { 
-        if (address && isTestnet) { 
+    useInterval(() => {
+        if (address && isTestnet) {
             updateBalances(address)
         } else {
             clearBalances()
@@ -89,10 +94,40 @@ const Provider = ({ children }: Props) => {
 
     }, interval)
 
+    const getBTCPrices = async (timeFilter : any = {}) => {
+        try {
+            // Build the filter object based on the API's required format
+            let filter: any = {
+                symbol: {
+                    eq: "BTCUSDT"  // Always filter for Bitcoin/USDT pair
+                }
+            };
+
+            // Add time-based filters if provided
+            if (timeFilter.createdAt && timeFilter.createdAt.gt) {
+                filter.createdAt = {
+                    gt: timeFilter.createdAt.gt
+                };
+            }
+
+            // Call the API with the constructed filter
+            const { data } = await client.models.CryptoPrice.list({
+                filter: filter
+            });
+
+            return data;
+        } catch (error) {
+            console.error("Error fetching BTC prices:", error);
+            return [];
+        }
+    };
+
+
     const accountContext: any = useMemo(
         () => ({
             balances,
-            poolData
+            poolData,
+            getBTCPrices
         }),
         [
             balances,
