@@ -6,6 +6,7 @@ import { SuiClient, getFullnodeUrl, SuiMoveObject } from '@mysten/sui.js/client'
 import BigNumber from "bignumber.js"
 import COINS from "../data/coins.json"
 import COLLATERAL_POOLS from "../data/collateral_pools.json"
+import { bcs } from '@mysten/bcs';
 
 const useMarket = () => {
 
@@ -323,10 +324,16 @@ const useMarket = () => {
             prices[pool.name] = parseAmount(BigNumber(poolFields.price_oracle), 4)
         }
 
+        const totalSupplied = parseAmount(BigNumber(content.fields.lending_pool.fields.total_suibtc), 9)
+        const totalSuppliedValue = Number(prices["BTC"]) * totalSupplied
+
+        const apy = calculateAPY(100, totalSuppliedValue)
+
         return {
             prices,
+            rewardsApy: apy,
             lendingPool: {
-                totalSupplied: parseAmount(BigNumber(content.fields.lending_pool.fields.total_suibtc), 9),
+                totalSupplied,
                 totalBorrowed: parseAmount(BigNumber(content.fields.lending_pool.fields.total_borrowed), 9),
                 borrowRate: parseAmount(BigNumber(content.fields.lending_pool.fields.borrow_rate), 2),
                 supplyRate: parseAmount(BigNumber(content.fields.lending_pool.fields.supply_rate), 2),
@@ -334,6 +341,24 @@ const useMarket = () => {
         }
 
     }, [client])
+
+
+    // Function to calculate APY for staking pools
+    const calculateAPY = (emissionRate: number, assetPrice: number) => {
+        const actualEmissionRate = emissionRate
+
+        // Calculate tokens earned per token per year
+        const secondsInYear = 365 * 24 * 60 * 60; // 31,536,000
+        const tokensPerYearPerToken = actualEmissionRate * secondsInYear;
+
+        // Calculate USD value of rewards per year per USD staked
+        const rewardsValuePerYear = tokensPerYearPerToken * 0.00015;
+
+        // Calculate APY as percentage
+        const apy = (rewardsValuePerYear / assetPrice) * 100;
+
+        return apy.toFixed(2); // Return with 2 decimal places
+    }
 
     const mint = useCallback(async (
         collateral_amount: number,
@@ -885,9 +910,95 @@ const useMarket = () => {
 
     }, [wallet, client])
 
+    const claim = useCallback(async () => {
+        if (!wallet) {
+            return;
+        }
+
+        const { account } = wallet
+        const address = account && account?.address
+
+        if (!address) {
+            return;
+        }
+
+        const tx = new Transaction();
+        tx.setGasBudget(10000000);
+
+        tx.moveCall({
+            target: `0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::governance::claim_governance_rewards`,
+            arguments: [
+                tx.object(
+                    "0x1ee2d2dfc5ab195ec948a2a1422fdf86866954fd70853b4b4b16d593bbd8d048"
+                )
+            ],
+        });
+
+        const params: any = {
+            transaction: tx
+        }
+
+        await wallet.signAndExecuteTransaction(params);
+    },
+        [wallet, client]
+    );
+
+    const getPendingRewards = useCallback(async (address: string) => {
+
+        const txb: any = new Transaction();
+        txb.setSender(address);
+        txb.setGasBudget(10000000);
+        txb.setGasOwner(address)
+
+        const epochInfo = await client.getLatestSuiSystemState()
+
+        txb.moveCall({
+            target: `0xa22ab9bb6c4fa77a3b72395841b4df9506d154f84a673138816cbb3ea4414502::governance::get_pending_rewards`,
+            arguments: [
+                txb.object(
+                    "0x1ee2d2dfc5ab195ec948a2a1422fdf86866954fd70853b4b4b16d593bbd8d048"
+                ),
+                txb.pure.address(address),
+                txb.pure.u64(`${(epochInfo.epochStartTimestampMs)}`)
+            ],
+        });
+
+
+
+        // const result = await client.devInspectTransactionBlock(txb)
+        const result: any = await client.devInspectTransactionBlock({
+            transactionBlock: txb,
+            sender: address
+        })
+
+
+        if (result && result?.results && result?.results[0]?.returnValues[0][0]) {
+            const bytes = result.results[0].returnValues[0][0];
+
+            // Create a Uint8Array
+            const byteArray = new Uint8Array(bytes);
+
+            // Use DataView to interpret the bytes as a 64-bit integer
+            const view = new DataView(byteArray.buffer);
+
+            // Read as unsigned 64-bit (BigInt) in little-endian
+            const u64 = view.getBigUint64(0, true); // true = little-endian
+
+            return parseAmount(u64.toString(), 9)
+        } else {
+            return 0
+        }
+
+
+
+
+    }, [client, wallet])
+
     const parseAmount = (input: any, decimals: number) => {
         return Number(input) / 10 ** decimals;
     };
+
+
 
     return {
         faucet,
@@ -904,7 +1015,9 @@ const useMarket = () => {
         withdraw,
         cashOut,
         repay,
-        addMoreCollateral
+        addMoreCollateral,
+        getPendingRewards,
+        claim
     }
 }
 

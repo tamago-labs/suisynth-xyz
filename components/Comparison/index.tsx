@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, DollarSign, Clock, XCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import Link from "next/link"
 
 
 const ComparisonContainer = () => {
@@ -29,7 +30,7 @@ const ComparisonContainer = () => {
                     </h2>
                     <div className="h-1 w-24 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto rounded-full mb-6" />
                     <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-                    Unlike perps, SuiSynth uses a lending model. You gain leveraged exposure to assets like BTC without paying in recurring costs
+                        Unlike perps, SuiSynth uses a lending model. You gain leveraged exposure to assets like BTC without paying in recurring costs
                     </p>
                 </motion.div>
 
@@ -246,10 +247,12 @@ const ComparisonContainer = () => {
                     transition={{ duration: 0.5, delay: 0.6 }}
                     className="mt-16 text-center"
                 >
-                    <button className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-lg flex items-center gap-2 hover:shadow-lg hover:shadow-blue-500/20 transition-all mx-auto">
-                        Trade Now
-                        <ArrowRight size={18} />
-                    </button>
+                    <Link href="/trade">
+                        <button className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-lg flex items-center gap-2 hover:shadow-lg hover:shadow-blue-500/20 transition-all mx-auto">
+                            Trade Now
+                            <ArrowRight size={18} />
+                        </button>
+                    </Link>
                 </motion.div>
             </div>
         </section>

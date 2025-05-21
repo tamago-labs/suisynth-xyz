@@ -278,9 +278,9 @@ const TradeContainer = () => {
               <div className="flex items-start gap-3">
                 <Info size={20} className="text-green-400 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-green-400">Borrow from Lending Pool</h4>
+                  <h4 className="font-medium text-green-400">Frictionless Leveraged Trading</h4>
                   <p className="text-slate-300 text-sm mt-1">
-                    Open a leveraged long position on suiBTC by borrowing—no funding rates, no liquid order books.
+                    Open a leveraged long position on suiBTC with no funding rates and no liquid order books. Pay interest only when you repay the loan.
                   </p>
                 </div>
               </div>
@@ -895,7 +895,7 @@ const TradeContainer = () => {
                   className="w-1/2 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
                 >
                   Cancel
-                </button> 
+                </button>
               </div>
               {errorCashout && (
                 <p className="text-sm text-center mt-2 text-white">
@@ -1119,7 +1119,7 @@ const TradeContainer = () => {
                       className="w-full py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors"
                       disabled={loading || !repayAmount || parseFloat(repayAmount) <= 0}
                     >
- 
+
                       {loading
                         ?
                         <RefreshCw
